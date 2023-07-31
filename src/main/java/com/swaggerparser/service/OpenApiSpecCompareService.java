@@ -1,4 +1,4 @@
-package com.swaggerparser;
+package com.swaggerparser.service;
 
 import com.swaggerparser.dto.SchemaDetails;
 import com.swaggerparser.dto.SpecComparisonResponse;
@@ -7,6 +7,7 @@ import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +15,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class OpenApiSpecComparator {
+@Service
+public class OpenApiSpecCompareService {
 
     public SpecComparisonResponse analyzeBreakingChanges(String srcPath, String tgtPath) {
         SpecComparisonResponse specComparisonResponse = new SpecComparisonResponse();
