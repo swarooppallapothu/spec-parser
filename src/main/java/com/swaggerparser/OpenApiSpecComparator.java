@@ -1,7 +1,7 @@
-package com.swaggerparserlib;
+package com.swaggerparser;
 
-import com.swaggerparserlib.dto.SchemaDetails;
-import com.swaggerparserlib.dto.SpecComparisonResponse;
+import com.swaggerparser.dto.SchemaDetails;
+import com.swaggerparser.dto.SpecComparisonResponse;
 import io.swagger.parser.OpenAPIParser;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
