@@ -1,18 +1,18 @@
 package com.swaggerparser.service;
 
+import com.swaggerparser.dto.PathDetails;
 import com.swaggerparser.dto.SchemaDetails;
 import com.swaggerparser.dto.SpecComparisonResponse;
 import io.swagger.parser.OpenAPIParser;
+import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,14 +23,57 @@ public class OpenApiSpecCompareService {
         SwaggerParseResult srcParseResult = new OpenAPIParser().readLocation(srcPath, null, null);
         SwaggerParseResult tgtParseResult = new OpenAPIParser().readLocation(tgtPath, null, null);
 
+        specComparisonResponse.setPaths(breakingChangesForPath(srcParseResult.getOpenAPI().getPaths(), tgtParseResult.getOpenAPI().getPaths()));
         specComparisonResponse.setSchemas(breakingChangesForSchemas(srcParseResult.getOpenAPI().getComponents().getSchemas(), tgtParseResult.getOpenAPI().getComponents().getSchemas()));
 
         return specComparisonResponse;
     }
 
-    public List<String> breakingChangesForPath() {
+    public List<PathDetails> breakingChangesForPath(Paths srcPaths, Paths tgtPaths) {
 
-        return null;
+        List<PathDetails> pathDetails = new ArrayList<>();
+
+        Set<String> srcPathNames = srcPaths.keySet();
+        Set<String> tgtPathNames = tgtPaths.keySet();
+
+        tgtPathNames
+                .stream()
+                .filter(v -> !srcPathNames.contains(v))
+                .forEach(v -> {
+                    PathDetails newPath = new PathDetails();
+                    newPath.setPath(v);
+                    newPath.setChanges(Collections.singletonList("Added in target"));
+                    pathDetails.add(newPath);
+                });
+
+        srcPathNames
+                .stream()
+                .filter(v -> !tgtPathNames.contains(v))
+                .forEach(v -> {
+                    PathDetails newPath = new PathDetails();
+                    newPath.setPath(v);
+                    newPath.setChanges(Collections.singletonList("Removed from target"));
+                    pathDetails.add(newPath);
+                });
+
+        Set<String> commonPathNames = srcPathNames.stream()
+                .distinct()
+                .filter(tgtPathNames::contains)
+                .collect(Collectors.toSet());
+
+        commonPathNames.forEach(v -> {
+            PathItem srcSchema = srcPaths.get(v);
+            PathItem tgtSchema = tgtPaths.get(v);
+            /*List<String> schemaBreakingChanges = breakingChangesForSchema(srcSchema, tgtSchema);
+            if (!schemaBreakingChanges.isEmpty()) {
+                SchemaDetails schemaChanges = new SchemaDetails();
+                schemaChanges.setSchema(v);
+                schemaChanges.setChanges(schemaBreakingChanges);
+                schemaDetails.add(schemaChanges);
+            }*/
+        });
+
+        return pathDetails;
     }
 
     public List<SchemaDetails> breakingChangesForSchemas(Map<String, Schema> srcSchemas, Map<String, Schema> tgtSchemas) {
