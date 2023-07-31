@@ -1,5 +1,6 @@
 package com.swaggerparser.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,5 +19,10 @@ public class PathDetails extends BreakingChange {
     private BreakingChange head;
     private BreakingChange patch;
     private BreakingChange trace;
+
+    @JsonIgnore
+    public boolean hasChange() {
+        return get != null || put != null || post != null || delete != null || options != null || head != null || patch != null || trace != null;
+    }
 
 }

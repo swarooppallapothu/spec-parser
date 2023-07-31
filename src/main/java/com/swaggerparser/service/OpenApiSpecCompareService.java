@@ -1,19 +1,24 @@
 package com.swaggerparser.service;
 
+import com.swaggerparser.dto.BreakingChange;
 import com.swaggerparser.dto.PathDetails;
 import com.swaggerparser.dto.SchemaDetails;
 import com.swaggerparser.dto.SpecComparisonResponse;
 import io.swagger.parser.OpenAPIParser;
+import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
+import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static io.swagger.v3.oas.models.PathItem.HttpMethod;
 
 @Service
 public class OpenApiSpecCompareService {
@@ -31,7 +36,7 @@ public class OpenApiSpecCompareService {
 
     public List<PathDetails> breakingChangesForPath(Paths srcPaths, Paths tgtPaths) {
 
-        List<PathDetails> pathDetails = new ArrayList<>();
+        List<PathDetails> pathDetailsList = new ArrayList<>();
 
         Set<String> srcPathNames = srcPaths.keySet();
         Set<String> tgtPathNames = tgtPaths.keySet();
@@ -43,7 +48,7 @@ public class OpenApiSpecCompareService {
                     PathDetails newPath = new PathDetails();
                     newPath.setPath(v);
                     newPath.setChanges(Collections.singletonList("Added in target"));
-                    pathDetails.add(newPath);
+                    pathDetailsList.add(newPath);
                 });
 
         srcPathNames
@@ -53,7 +58,7 @@ public class OpenApiSpecCompareService {
                     PathDetails newPath = new PathDetails();
                     newPath.setPath(v);
                     newPath.setChanges(Collections.singletonList("Removed from target"));
-                    pathDetails.add(newPath);
+                    pathDetailsList.add(newPath);
                 });
 
         Set<String> commonPathNames = srcPathNames.stream()
@@ -62,25 +67,148 @@ public class OpenApiSpecCompareService {
                 .collect(Collectors.toSet());
 
         commonPathNames.forEach(v -> {
-            PathItem srcSchema = srcPaths.get(v);
-            PathItem tgtSchema = tgtPaths.get(v);
-            /*List<String> schemaBreakingChanges = breakingChangesForSchema(srcSchema, tgtSchema);
-            if (!schemaBreakingChanges.isEmpty()) {
-                SchemaDetails schemaChanges = new SchemaDetails();
-                schemaChanges.setSchema(v);
-                schemaChanges.setChanges(schemaBreakingChanges);
-                schemaDetails.add(schemaChanges);
-            }*/
+            PathDetails pathDetails = breakingChangesForPath(srcPaths.get(v), tgtPaths.get(v));
+            if (pathDetails.hasChange()) {
+                pathDetails.setPath(v);
+                pathDetailsList.add(pathDetails);
+            }
         });
+
+        return pathDetailsList;
+    }
+
+    public PathDetails breakingChangesForPath(PathItem srcPathItem, PathItem tgtPathItem) {
+        PathDetails pathDetails = new PathDetails();
+
+        pathDetails.setGet(breakingChangesForPath(HttpMethod.GET, srcPathItem.readOperationsMap().get(HttpMethod.GET), tgtPathItem.readOperationsMap().get(HttpMethod.GET)));
+        pathDetails.setPost(breakingChangesForPath(HttpMethod.POST, srcPathItem.readOperationsMap().get(HttpMethod.POST), tgtPathItem.readOperationsMap().get(HttpMethod.POST)));
+        pathDetails.setPut(breakingChangesForPath(HttpMethod.PUT, srcPathItem.readOperationsMap().get(HttpMethod.PUT), tgtPathItem.readOperationsMap().get(HttpMethod.PUT)));
+        pathDetails.setDelete(breakingChangesForPath(HttpMethod.DELETE, srcPathItem.readOperationsMap().get(HttpMethod.DELETE), tgtPathItem.readOperationsMap().get(HttpMethod.DELETE)));
+        pathDetails.setOptions(breakingChangesForPath(HttpMethod.OPTIONS, srcPathItem.readOperationsMap().get(HttpMethod.OPTIONS), tgtPathItem.readOperationsMap().get(HttpMethod.OPTIONS)));
+        pathDetails.setHead(breakingChangesForPath(HttpMethod.HEAD, srcPathItem.readOperationsMap().get(HttpMethod.HEAD), tgtPathItem.readOperationsMap().get(HttpMethod.HEAD)));
+        pathDetails.setPatch(breakingChangesForPath(HttpMethod.PATCH, srcPathItem.readOperationsMap().get(HttpMethod.PATCH), tgtPathItem.readOperationsMap().get(HttpMethod.PATCH)));
+        pathDetails.setTrace(breakingChangesForPath(HttpMethod.TRACE, srcPathItem.readOperationsMap().get(HttpMethod.TRACE), tgtPathItem.readOperationsMap().get(HttpMethod.TRACE)));
 
         return pathDetails;
     }
+
+    public BreakingChange breakingChangesForPath(HttpMethod method, Operation srcOperation, Operation tgtOperation) {
+        BreakingChange change = new BreakingChange();
+
+        if (srcOperation == null && tgtOperation == null) {
+            return null;
+        } else if (srcOperation == null) {
+            change.getChanges().add("Added " + method + " Operation");
+        } else if (tgtOperation == null) {
+            change.getChanges().add("Removed " + method + " Operation");
+        } else {
+            if (srcOperation.getParameters() == null) {
+                srcOperation.setParameters(new ArrayList<>());
+            }
+            if (tgtOperation.getParameters() == null) {
+                tgtOperation.setParameters(new ArrayList<>());
+            }
+
+            List<String> srcParameterNames = srcOperation.getParameters()
+                    .stream()
+                    .map(Parameter::getName)
+                    .collect(Collectors.toList());
+
+            List<String> tgtParameterNames = tgtOperation.getParameters()
+                    .stream()
+                    .map(Parameter::getName)
+                    .collect(Collectors.toList());
+
+            String newParameters = tgtParameterNames.stream()
+                    .filter(v -> !srcParameterNames.contains(v))
+                    .collect(Collectors.joining(", "));
+
+            if (!newParameters.isEmpty()) {
+                change.getChanges().add("Parameters added to Target: " + newParameters);
+            }
+
+            String removedParameters = srcParameterNames.stream()
+                    .filter(v -> !tgtParameterNames.contains(v))
+                    .collect(Collectors.joining(", "));
+            if (!removedParameters.isEmpty()) {
+                change.getChanges().add("Parameters removed from Target: " + removedParameters);
+            }
+
+            List<String> srcRequiredParameterNames = srcOperation.getParameters()
+                    .stream()
+                    .filter(p -> p.getRequired() != null && p.getRequired())
+                    .map(Parameter::getName)
+                    .collect(Collectors.toList());
+
+            List<String> tgtRequiredParameterNames = tgtOperation.getParameters()
+                    .stream()
+                    .filter(p -> p.getRequired() != null && p.getRequired())
+                    .map(Parameter::getName)
+                    .collect(Collectors.toList());
+
+            String requiredChanges = compareRequiredProps(srcRequiredParameterNames, tgtRequiredParameterNames, "Parameters");
+            if (requiredChanges != null && !requiredChanges.isEmpty()) {
+                change.getChanges().add(requiredChanges);
+            }
+
+            List<String> commonParameters = srcParameterNames.stream()
+                    .filter(tgtParameterNames::contains)
+                    .collect(Collectors.toList());
+
+            commonParameters.forEach(v -> {
+                Parameter srcParameter = getParameter(v, srcOperation.getParameters());
+                Parameter tgtParameter = getParameter(v, tgtOperation.getParameters());
+                List<String> changes = compareProperties(v, srcParameter.getSchema(), tgtParameter.getSchema());
+                if (!changes.isEmpty()) {
+                    change.getChanges().addAll(changes);
+                }
+                if (!srcParameter.getIn().equals(tgtParameter.getIn())) {
+                    change.getChanges().add("Parameter is " + srcParameter.getIn() + " in source and " + tgtParameter.getIn() + " in target");
+                }
+            });
+
+            if (srcOperation.getRequestBody() != null && tgtOperation.getRequestBody() != null) {
+
+            } else if (srcOperation.getRequestBody() == null && tgtOperation.getRequestBody() != null) {
+                change.getChanges().add("Request body added on target");
+            } else if (srcOperation.getRequestBody() != null && tgtOperation.getRequestBody() == null) {
+                change.getChanges().add("Request body removed from target");
+            }
+        }
+
+        return change.getChanges().isEmpty() ? null : change;
+    }
+
+    public Parameter getParameter(String parameterName, List<Parameter> parameters) {
+        return parameters.stream().filter(p -> p.getName().equals(parameterName)).findAny().orElse(null);
+    }
+
 
     public List<SchemaDetails> breakingChangesForSchemas(Map<String, Schema> srcSchemas, Map<String, Schema> tgtSchemas) {
         List<SchemaDetails> schemaDetails = new ArrayList<>();
 
         Set<String> srcSchemaNames = srcSchemas.keySet();
         Set<String> tgtSchemaNames = tgtSchemas.keySet();
+
+        tgtSchemaNames
+                .stream()
+                .filter(v -> !srcSchemaNames.contains(v))
+                .forEach(v -> {
+                    SchemaDetails newSchema = new SchemaDetails();
+                    newSchema.setSchema(v);
+                    newSchema.setChanges(Collections.singletonList("Added in target"));
+                    schemaDetails.add(newSchema);
+                });
+
+        srcSchemaNames
+                .stream()
+                .filter(v -> !tgtSchemaNames.contains(v))
+                .forEach(v -> {
+                    SchemaDetails removedSchema = new SchemaDetails();
+                    removedSchema.setSchema(v);
+                    removedSchema.setChanges(Collections.singletonList("Removed from target"));
+                    schemaDetails.add(removedSchema);
+                });
 
         Set<String> commonSchemaNames = srcSchemaNames.stream()
                 .distinct()
@@ -114,7 +242,7 @@ public class OpenApiSpecCompareService {
                 .filter(v -> !srcProps.contains(v))
                 .collect(Collectors.joining(", "));
         if (!newTgtProps.isEmpty()) {
-            changes.add("Target has new properties: " + newTgtProps);
+            changes.add("Properties added to Target: " + newTgtProps);
         }
 
         String newSrcProps = srcProps
@@ -123,10 +251,10 @@ public class OpenApiSpecCompareService {
                 .collect(Collectors.joining(", "));
 
         if (!newSrcProps.isEmpty()) {
-            changes.add("Source has new properties: " + newSrcProps);
+            changes.add("Properties deleted from Target: " + newSrcProps);
         }
 
-        String requiredChanges = compareRequiredProps(srcSchema.getRequired(), tgtSchema.getRequired());
+        String requiredChanges = compareRequiredProps(srcSchema.getRequired(), tgtSchema.getRequired(), "Properties");
         if (requiredChanges != null && !requiredChanges.isEmpty()) {
             changes.add(requiredChanges);
         }
@@ -185,7 +313,7 @@ public class OpenApiSpecCompareService {
         return removedEnumProps.isEmpty() && addedEnumProps.isEmpty() ? "" : ("Enum: " + name + " has " + (!addedEnumProps.isEmpty() ? ("New values: [" + addedEnumProps + "]") : "") + (!removedEnumProps.isEmpty() ? (" Removed values: [" + removedEnumProps + "]") : ""));
     }
 
-    public String compareRequiredProps(List<String> srcRequired, List<String> tgtRequired) {
+    public String compareRequiredProps(List<String> srcRequired, List<String> tgtRequired, String propPlaceholder) {
         String returnVal = null;
         if (srcRequired != null && tgtRequired != null) {
             String newProps = tgtRequired
@@ -198,12 +326,12 @@ public class OpenApiSpecCompareService {
                     .filter(v -> !tgtRequired.contains(v))
                     .collect(Collectors.joining(", "));
 
-            returnVal = !newProps.isEmpty() ? "Required properties added to target: [" + String.join(", ", newProps) + "]. " : "";
-            returnVal += !removedProps.isEmpty() ? "Required properties deleted from target: [" + String.join(", ", removedProps) + "]." : "";
+            returnVal = !newProps.isEmpty() ? propPlaceholder + " marked as required in target: [" + String.join(", ", newProps) + "]. " : "";
+            returnVal += !removedProps.isEmpty() ? propPlaceholder + " marked as not required in target: [" + String.join(", ", removedProps) + "]." : "";
         } else if (srcRequired == null && tgtRequired != null) {
-            returnVal = "Required properties added to target: [" + String.join(", ", tgtRequired) + "]";
+            returnVal = propPlaceholder + " marked as required in target: [" + String.join(", ", tgtRequired) + "]";
         } else if (srcRequired != null && tgtRequired == null) {
-            returnVal = "Required properties added deleted from target: [" + String.join(", ", srcRequired) + "]";
+            returnVal = propPlaceholder + " marked as not required in target: [" + String.join(", ", srcRequired) + "]";
         }
 
         return returnVal;
