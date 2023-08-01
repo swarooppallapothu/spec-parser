@@ -5,9 +5,9 @@ import com.swaggerparser.dto.PathDetails;
 import com.swaggerparser.dto.SchemaDetails;
 import com.swaggerparser.dto.SpecComparisonResponse;
 import io.swagger.parser.OpenAPIParser;
+import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
-import io.swagger.v3.oas.models.Paths;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
@@ -28,18 +28,18 @@ public class OpenApiSpecCompareService {
         SwaggerParseResult srcParseResult = new OpenAPIParser().readLocation(srcPath, null, null);
         SwaggerParseResult tgtParseResult = new OpenAPIParser().readLocation(tgtPath, null, null);
 
-        specComparisonResponse.setPaths(breakingChangesForPath(srcParseResult.getOpenAPI().getPaths(), tgtParseResult.getOpenAPI().getPaths()));
+        specComparisonResponse.setPaths(breakingChangesForPath(srcParseResult.getOpenAPI(), tgtParseResult.getOpenAPI()));
         specComparisonResponse.setSchemas(breakingChangesForSchemas(srcParseResult.getOpenAPI().getComponents().getSchemas(), tgtParseResult.getOpenAPI().getComponents().getSchemas()));
 
         return specComparisonResponse;
     }
 
-    public List<PathDetails> breakingChangesForPath(Paths srcPaths, Paths tgtPaths) {
+    public List<PathDetails> breakingChangesForPath(OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
 
         List<PathDetails> pathDetailsList = new ArrayList<>();
 
-        Set<String> srcPathNames = srcPaths.keySet();
-        Set<String> tgtPathNames = tgtPaths.keySet();
+        Set<String> srcPathNames = srcOpenApi.getPaths().keySet();
+        Set<String> tgtPathNames = tgtOpenApi.getPaths().keySet();
 
         tgtPathNames
                 .stream()
@@ -67,7 +67,7 @@ public class OpenApiSpecCompareService {
                 .collect(Collectors.toSet());
 
         commonPathNames.forEach(v -> {
-            PathDetails pathDetails = breakingChangesForPath(srcPaths.get(v), tgtPaths.get(v));
+            PathDetails pathDetails = breakingChangesForPath(v, srcOpenApi, tgtOpenApi);
             if (pathDetails.hasChange()) {
                 pathDetails.setPath(v);
                 pathDetailsList.add(pathDetails);
@@ -77,22 +77,25 @@ public class OpenApiSpecCompareService {
         return pathDetailsList;
     }
 
-    public PathDetails breakingChangesForPath(PathItem srcPathItem, PathItem tgtPathItem) {
+    public PathDetails breakingChangesForPath(String path, OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
         PathDetails pathDetails = new PathDetails();
 
-        pathDetails.setGet(breakingChangesForPath(HttpMethod.GET, srcPathItem.readOperationsMap().get(HttpMethod.GET), tgtPathItem.readOperationsMap().get(HttpMethod.GET)));
-        pathDetails.setPost(breakingChangesForPath(HttpMethod.POST, srcPathItem.readOperationsMap().get(HttpMethod.POST), tgtPathItem.readOperationsMap().get(HttpMethod.POST)));
-        pathDetails.setPut(breakingChangesForPath(HttpMethod.PUT, srcPathItem.readOperationsMap().get(HttpMethod.PUT), tgtPathItem.readOperationsMap().get(HttpMethod.PUT)));
-        pathDetails.setDelete(breakingChangesForPath(HttpMethod.DELETE, srcPathItem.readOperationsMap().get(HttpMethod.DELETE), tgtPathItem.readOperationsMap().get(HttpMethod.DELETE)));
-        pathDetails.setOptions(breakingChangesForPath(HttpMethod.OPTIONS, srcPathItem.readOperationsMap().get(HttpMethod.OPTIONS), tgtPathItem.readOperationsMap().get(HttpMethod.OPTIONS)));
-        pathDetails.setHead(breakingChangesForPath(HttpMethod.HEAD, srcPathItem.readOperationsMap().get(HttpMethod.HEAD), tgtPathItem.readOperationsMap().get(HttpMethod.HEAD)));
-        pathDetails.setPatch(breakingChangesForPath(HttpMethod.PATCH, srcPathItem.readOperationsMap().get(HttpMethod.PATCH), tgtPathItem.readOperationsMap().get(HttpMethod.PATCH)));
-        pathDetails.setTrace(breakingChangesForPath(HttpMethod.TRACE, srcPathItem.readOperationsMap().get(HttpMethod.TRACE), tgtPathItem.readOperationsMap().get(HttpMethod.TRACE)));
+        PathItem srcPathItem = srcOpenApi.getPaths().get(path);
+        PathItem tgtPathItem = tgtOpenApi.getPaths().get(path);
+
+        pathDetails.setGet(breakingChangesForPath(HttpMethod.GET, srcPathItem.readOperationsMap().get(HttpMethod.GET), tgtPathItem.readOperationsMap().get(HttpMethod.GET), srcOpenApi, tgtOpenApi));
+        pathDetails.setPost(breakingChangesForPath(HttpMethod.POST, srcPathItem.readOperationsMap().get(HttpMethod.POST), tgtPathItem.readOperationsMap().get(HttpMethod.POST), srcOpenApi, tgtOpenApi));
+        pathDetails.setPut(breakingChangesForPath(HttpMethod.PUT, srcPathItem.readOperationsMap().get(HttpMethod.PUT), tgtPathItem.readOperationsMap().get(HttpMethod.PUT), srcOpenApi, tgtOpenApi));
+        pathDetails.setDelete(breakingChangesForPath(HttpMethod.DELETE, srcPathItem.readOperationsMap().get(HttpMethod.DELETE), tgtPathItem.readOperationsMap().get(HttpMethod.DELETE), srcOpenApi, tgtOpenApi));
+        pathDetails.setOptions(breakingChangesForPath(HttpMethod.OPTIONS, srcPathItem.readOperationsMap().get(HttpMethod.OPTIONS), tgtPathItem.readOperationsMap().get(HttpMethod.OPTIONS), srcOpenApi, tgtOpenApi));
+        pathDetails.setHead(breakingChangesForPath(HttpMethod.HEAD, srcPathItem.readOperationsMap().get(HttpMethod.HEAD), tgtPathItem.readOperationsMap().get(HttpMethod.HEAD), srcOpenApi, tgtOpenApi));
+        pathDetails.setPatch(breakingChangesForPath(HttpMethod.PATCH, srcPathItem.readOperationsMap().get(HttpMethod.PATCH), tgtPathItem.readOperationsMap().get(HttpMethod.PATCH), srcOpenApi, tgtOpenApi));
+        pathDetails.setTrace(breakingChangesForPath(HttpMethod.TRACE, srcPathItem.readOperationsMap().get(HttpMethod.TRACE), tgtPathItem.readOperationsMap().get(HttpMethod.TRACE), srcOpenApi, tgtOpenApi));
 
         return pathDetails;
     }
 
-    public BreakingChange breakingChangesForPath(HttpMethod method, Operation srcOperation, Operation tgtOperation) {
+    public BreakingChange breakingChangesForPath(HttpMethod method, Operation srcOperation, Operation tgtOperation, OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
         BreakingChange change = new BreakingChange();
 
         if (srcOperation == null && tgtOperation == null) {
@@ -107,6 +110,22 @@ public class OpenApiSpecCompareService {
             }
             if (tgtOperation.getParameters() == null) {
                 tgtOperation.setParameters(new ArrayList<>());
+            }
+
+            for (int i = 0; i < srcOperation.getParameters().size(); i++) {
+                Parameter parameter = srcOperation.getParameters().get(i);
+                if (parameter.getName() == null && parameter.get$ref() != null) {
+                    String parameterName = parameter.get$ref().substring(parameter.get$ref().lastIndexOf("/") + 1);
+                    srcOperation.getParameters().set(i, srcOpenApi.getComponents().getParameters().get(parameterName));
+                }
+            }
+
+            for (int i = 0; i < tgtOperation.getParameters().size(); i++) {
+                Parameter parameter = tgtOperation.getParameters().get(i);
+                if (parameter.getName() == null && parameter.get$ref() != null) {
+                    String parameterName = parameter.get$ref().substring(parameter.get$ref().lastIndexOf("/") + 1);
+                    tgtOperation.getParameters().set(i, tgtOpenApi.getComponents().getParameters().get(parameterName));
+                }
             }
 
             List<String> srcParameterNames = srcOperation.getParameters()
