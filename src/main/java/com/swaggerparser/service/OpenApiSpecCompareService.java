@@ -1,17 +1,17 @@
 package com.swaggerparser.service;
 
-import com.swaggerparser.dto.BreakingChange;
-import com.swaggerparser.dto.PathDetails;
-import com.swaggerparser.dto.SchemaDetails;
-import com.swaggerparser.dto.SpecComparisonResponse;
+import com.swaggerparser.dto.*;
 import io.swagger.parser.OpenAPIParser;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
+import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.parameters.Parameter;
+import io.swagger.v3.oas.models.parameters.RequestBody;
+import io.swagger.v3.oas.models.responses.ApiResponses;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 import org.springframework.stereotype.Service;
 
@@ -95,15 +95,17 @@ public class OpenApiSpecCompareService {
         return pathDetails;
     }
 
-    public BreakingChange breakingChangesForPath(HttpMethod method, Operation srcOperation, Operation tgtOperation, OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
-        BreakingChange change = new BreakingChange();
+    public PathItemDetails breakingChangesForPath(HttpMethod method, Operation srcOperation, Operation tgtOperation, OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
+        List<String> changes = new ArrayList<>();
+        Map<String, BreakingChange> requestBodyChanges = null;
+        Map<String, Map<String, BreakingChange>> responseContentChanges = new LinkedHashMap<>();
 
         if (srcOperation == null && tgtOperation == null) {
             return null;
         } else if (srcOperation == null) {
-            change.getChanges().add("Added " + method + " Operation");
+            changes.add("Added " + method + " Operation");
         } else if (tgtOperation == null) {
-            change.getChanges().add("Removed " + method + " Operation");
+            changes.add("Removed " + method + " Operation");
         } else {
             if (srcOperation.getParameters() == null) {
                 srcOperation.setParameters(new ArrayList<>());
@@ -143,14 +145,14 @@ public class OpenApiSpecCompareService {
                     .collect(Collectors.joining(", "));
 
             if (!newParameters.isEmpty()) {
-                change.getChanges().add("Parameters added to Target: " + newParameters);
+                changes.add("Parameters added to Target: " + newParameters);
             }
 
             String removedParameters = srcParameterNames.stream()
                     .filter(v -> !tgtParameterNames.contains(v))
                     .collect(Collectors.joining(", "));
             if (!removedParameters.isEmpty()) {
-                change.getChanges().add("Parameters removed from Target: " + removedParameters);
+                changes.add("Parameters removed from Target: " + removedParameters);
             }
 
             List<String> srcRequiredParameterNames = srcOperation.getParameters()
@@ -167,7 +169,7 @@ public class OpenApiSpecCompareService {
 
             String requiredChanges = compareRequiredProps(srcRequiredParameterNames, tgtRequiredParameterNames, "Parameters");
             if (requiredChanges != null && !requiredChanges.isEmpty()) {
-                change.getChanges().add(requiredChanges);
+                changes.add(requiredChanges);
             }
 
             List<String> commonParameters = srcParameterNames.stream()
@@ -177,25 +179,200 @@ public class OpenApiSpecCompareService {
             commonParameters.forEach(v -> {
                 Parameter srcParameter = getParameter(v, srcOperation.getParameters());
                 Parameter tgtParameter = getParameter(v, tgtOperation.getParameters());
-                List<String> changes = compareProperties(v, srcParameter.getSchema(), tgtParameter.getSchema());
+                List<String> paramChanges = compareProperties(v, srcParameter.getSchema(), tgtParameter.getSchema());
                 if (!changes.isEmpty()) {
-                    change.getChanges().addAll(changes);
+                    changes.addAll(paramChanges);
                 }
                 if (!srcParameter.getIn().equals(tgtParameter.getIn())) {
-                    change.getChanges().add("Parameter is " + srcParameter.getIn() + " in source and " + tgtParameter.getIn() + " in target");
+                    changes.add("Parameter is " + srcParameter.getIn() + " in source and " + tgtParameter.getIn() + " in target");
                 }
             });
 
             if (srcOperation.getRequestBody() != null && tgtOperation.getRequestBody() != null) {
-
+                requestBodyChanges = compareRequestBodyChanges(srcOperation.getRequestBody(), tgtOperation.getRequestBody(), srcOpenApi, tgtOpenApi);
             } else if (srcOperation.getRequestBody() == null && tgtOperation.getRequestBody() != null) {
-                change.getChanges().add("Request body added on target");
+                changes.add("Request body added on target");
             } else if (srcOperation.getRequestBody() != null && tgtOperation.getRequestBody() == null) {
-                change.getChanges().add("Request body removed from target");
+                changes.add("Request body removed from target");
+            }
+
+            if (hasValidResponse(srcOperation.getResponses()) && hasValidResponse(tgtOperation.getResponses())) {
+                responseContentChanges.putAll(compareApiResponsesChanges(srcOperation.getResponses(), tgtOperation.getResponses(), srcOpenApi, tgtOpenApi));
+                ;
+            } else if (!hasValidResponse(srcOperation.getResponses()) && hasValidResponse(tgtOperation.getResponses())) {
+                tgtOperation.getResponses().forEach((k, v) -> {
+                    responseContentChanges.put(k, new LinkedHashMap<>());
+                    v.getContent().forEach((k1, v1) -> {
+                        BreakingChange breakingChange = new BreakingChange();
+                        breakingChange.setChanges(Collections.singletonList("Response added to target"));
+                        responseContentChanges.get(k).put(k1, breakingChange);
+                    });
+                });
+
+            } else if (hasValidResponse(srcOperation.getResponses()) && !hasValidResponse(tgtOperation.getResponses())) {
+                srcOperation.getResponses().forEach((k, v) -> {
+                    responseContentChanges.put(k, new LinkedHashMap<>());
+                    v.getContent().forEach((k1, v1) -> {
+                        BreakingChange breakingChange = new BreakingChange();
+                        breakingChange.setChanges(Collections.singletonList("Response removed from target"));
+                        responseContentChanges.get(k).put(k1, breakingChange);
+                    });
+                });
             }
         }
 
-        return change.getChanges().isEmpty() ? null : change;
+        PathItemDetails pathItemDetails = new PathItemDetails();
+        pathItemDetails.setChanges(changes);
+        pathItemDetails.setRequestBodyChanges(requestBodyChanges);
+        pathItemDetails.setResponseContentChanges(responseContentChanges);
+        return pathItemDetails.hasChange() ? pathItemDetails : null;
+    }
+
+    public Map<String, BreakingChange> compareRequestBodyChanges(RequestBody srcRequestBody, RequestBody tgtRequestBody, OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
+        Map<String, BreakingChange> requestBodyChanges = new LinkedHashMap<>();
+        Set<String> srcContentNames = srcRequestBody.getContent().keySet();
+        Set<String> tgtContentNames = tgtRequestBody.getContent().keySet();
+
+        tgtContentNames
+                .stream()
+                .filter(v -> !srcContentNames.contains(v))
+                .forEach(v -> {
+                    BreakingChange newContent = new BreakingChange();
+                    newContent.setChanges(Collections.singletonList("Added in target"));
+                    requestBodyChanges.put(v, newContent);
+                });
+
+        srcContentNames
+                .stream()
+                .filter(v -> !tgtContentNames.contains(v))
+                .forEach(v -> {
+                    BreakingChange removedContent = new BreakingChange();
+                    removedContent.setChanges(Collections.singletonList("Removed from target"));
+                    requestBodyChanges.put(v, removedContent);
+                });
+
+        Set<String> commonSchemaNames = srcContentNames.stream()
+                .distinct()
+                .filter(tgtContentNames::contains)
+                .collect(Collectors.toSet());
+
+        commonSchemaNames.forEach(v -> {
+            if (srcRequestBody.getContent().get(v).getSchema().get$ref() != null &&
+                    srcRequestBody.getContent().get(v).getSchema().get$ref().equals(tgtRequestBody.getContent().get(v).getSchema().get$ref())) {
+                String schemaName = srcRequestBody.getContent().get(v).getSchema().get$ref().substring(srcRequestBody.getContent().get(v).getSchema().get$ref().lastIndexOf("/") + 1);
+                ObjectSchema srcSchema = (ObjectSchema) srcOpenApi.getComponents().getSchemas().get(schemaName);
+                ObjectSchema tgtSchema = (ObjectSchema) tgtOpenApi.getComponents().getSchemas().get(schemaName);
+                List<String> changes = breakingChangesForSchema(srcSchema, tgtSchema);
+                if (!changes.isEmpty()) {
+                    BreakingChange breakingChange = new BreakingChange();
+                    breakingChange.setChanges(changes);
+                    requestBodyChanges.put(v, breakingChange);
+                }
+            } else {
+                BreakingChange breakingChange = new BreakingChange();
+                breakingChange.setChanges(Collections.singletonList("Request body changed"));
+                requestBodyChanges.put(v, breakingChange);
+            }
+
+        });
+        return requestBodyChanges;
+    }
+
+    public Map<String, Map<String, BreakingChange>> compareApiResponsesChanges(ApiResponses srcResponses, ApiResponses tgtResponses, OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
+        Map<String, Map<String, BreakingChange>> responseBodyChanges = new LinkedHashMap<>();
+        Set<String> srcResponseNames = srcResponses.keySet();
+        Set<String> tgtResponseNames = tgtResponses.keySet();
+
+        tgtResponseNames
+                .stream()
+                .filter(v -> !srcResponseNames.contains(v))
+                .forEach(v -> {
+                    responseBodyChanges.put(v, new LinkedHashMap<>());
+                    tgtResponses.get(v).getContent().forEach((k, s) -> {
+                        BreakingChange newContent = new BreakingChange();
+                        newContent.setChanges(Collections.singletonList("Added in target"));
+                        responseBodyChanges.get(v).put(k, newContent);
+                    });
+                });
+
+        srcResponseNames
+                .stream()
+                .filter(v -> !tgtResponseNames.contains(v))
+                .forEach(v -> {
+                    responseBodyChanges.put(v, new LinkedHashMap<>());
+                    srcResponses.get(v).getContent().forEach((k, s) -> {
+                        BreakingChange newContent = new BreakingChange();
+                        newContent.setChanges(Collections.singletonList("Removed from target"));
+                        responseBodyChanges.get(v).put(k, newContent);
+                    });
+                });
+
+        Set<String> commonSchemaNames = srcResponseNames.stream()
+                .distinct()
+                .filter(tgtResponseNames::contains)
+                .collect(Collectors.toSet());
+
+        commonSchemaNames.forEach(v -> {
+
+            Map<String, BreakingChange> changeMap = compareResponseContentChanges(srcResponses.get(v).getContent(), tgtResponses.get(v).getContent(), srcOpenApi, tgtOpenApi);
+            if (!changeMap.isEmpty()) {
+                responseBodyChanges.put(v, changeMap);
+            }
+        });
+        return responseBodyChanges;
+    }
+
+    public Map<String, BreakingChange> compareResponseContentChanges(Content srcContentIn, Content tgtContentIn, OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
+        Map<String, BreakingChange> responseBodyChanges = new LinkedHashMap<>();
+
+        Content srcContent = srcContentIn == null ? new Content() : srcContentIn;
+        Content tgtContent = tgtContentIn == null ? new Content() : tgtContentIn;
+
+        Set<String> srcContentNames = srcContent.keySet();
+        Set<String> tgtContentNames = tgtContent.keySet();
+
+        tgtContentNames
+                .stream()
+                .filter(v -> !srcContentNames.contains(v))
+                .forEach(v -> {
+                    BreakingChange newContent = new BreakingChange();
+                    newContent.setChanges(Collections.singletonList("Added in target"));
+                    responseBodyChanges.put(v, newContent);
+                });
+
+        srcContentNames
+                .stream()
+                .filter(v -> !tgtContentNames.contains(v))
+                .forEach(v -> {
+                    BreakingChange removedContent = new BreakingChange();
+                    removedContent.setChanges(Collections.singletonList("Removed from target"));
+                    responseBodyChanges.put(v, removedContent);
+                });
+
+        Set<String> commonContentNames = srcContentNames.stream()
+                .distinct()
+                .filter(tgtContentNames::contains)
+                .collect(Collectors.toSet());
+
+        commonContentNames.forEach(v -> {
+            if (srcContent.get(v).getSchema() != null && srcContent.get(v).getSchema().get$ref() != null &&
+                    srcContent.get(v).getSchema().get$ref().equals(tgtContent.get(v).getSchema().get$ref())) {
+                String schemaName = srcContent.get(v).getSchema().get$ref().substring(srcContent.get(v).getSchema().get$ref().lastIndexOf("/") + 1);
+                ObjectSchema srcSchema = (ObjectSchema) srcOpenApi.getComponents().getSchemas().get(schemaName);
+                ObjectSchema tgtSchema = (ObjectSchema) tgtOpenApi.getComponents().getSchemas().get(schemaName);
+                List<String> changes = breakingChangesForSchema(srcSchema, tgtSchema);
+                if (!changes.isEmpty()) {
+                    BreakingChange breakingChange = new BreakingChange();
+                    breakingChange.setChanges(changes);
+                    responseBodyChanges.put(v, breakingChange);
+                }
+            } else {
+                BreakingChange breakingChange = new BreakingChange();
+                breakingChange.setChanges(Collections.singletonList("Response content changed"));
+                responseBodyChanges.put(v, breakingChange);
+            }
+        });
+        return responseBodyChanges;
     }
 
     public Parameter getParameter(String parameterName, List<Parameter> parameters) {
@@ -354,6 +531,10 @@ public class OpenApiSpecCompareService {
         }
 
         return returnVal;
+    }
+
+    public boolean hasValidResponse(ApiResponses apiResponses) {
+        return apiResponses != null && !apiResponses.isEmpty();
     }
 
 }

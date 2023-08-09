@@ -11,14 +11,14 @@ import lombok.Setter;
 public class PathDetails extends BreakingChange {
 
     private String path;
-    private BreakingChange get;
-    private BreakingChange put;
-    private BreakingChange post;
-    private BreakingChange delete;
-    private BreakingChange options;
-    private BreakingChange head;
-    private BreakingChange patch;
-    private BreakingChange trace;
+    private PathItemDetails get;
+    private PathItemDetails put;
+    private PathItemDetails post;
+    private PathItemDetails delete;
+    private PathItemDetails options;
+    private PathItemDetails head;
+    private PathItemDetails patch;
+    private PathItemDetails trace;
 
     @JsonIgnore
     public boolean hasChange() {
