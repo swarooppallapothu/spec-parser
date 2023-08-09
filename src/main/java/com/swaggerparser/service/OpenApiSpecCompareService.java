@@ -355,7 +355,8 @@ public class OpenApiSpecCompareService {
                 .collect(Collectors.toSet());
 
         commonContentNames.forEach(v -> {
-            if (srcContent.get(v).getSchema() != null && srcContent.get(v).getSchema().get$ref() != null &&
+            if (srcContent.get(v).getSchema() != null && tgtContent.get(v).getSchema() != null
+                    && srcContent.get(v).getSchema().get$ref() != null &&
                     srcContent.get(v).getSchema().get$ref().equals(tgtContent.get(v).getSchema().get$ref())) {
                 String schemaName = srcContent.get(v).getSchema().get$ref().substring(srcContent.get(v).getSchema().get$ref().lastIndexOf("/") + 1);
                 ObjectSchema srcSchema = (ObjectSchema) srcOpenApi.getComponents().getSchemas().get(schemaName);
@@ -366,7 +367,7 @@ public class OpenApiSpecCompareService {
                     breakingChange.setChanges(changes);
                     responseBodyChanges.put(v, breakingChange);
                 }
-            } else {
+            } else if ((srcContent.get(v).getSchema() == null && tgtContent.get(v).getSchema() != null) || (srcContent.get(v).getSchema() != null && tgtContent.get(v).getSchema() == null)) {
                 BreakingChange breakingChange = new BreakingChange();
                 breakingChange.setChanges(Collections.singletonList("Response content changed"));
                 responseBodyChanges.put(v, breakingChange);
