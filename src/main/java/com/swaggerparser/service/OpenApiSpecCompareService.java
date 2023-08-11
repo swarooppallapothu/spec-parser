@@ -431,6 +431,16 @@ public class OpenApiSpecCompareService {
     public List<String> breakingChangesForSchema(ObjectSchema srcSchema, ObjectSchema tgtSchema) {
         List<String> changes = new ArrayList<>();
 
+        if (srcSchema == null && tgtSchema == null) {
+            return changes;
+        } else if (srcSchema == null || srcSchema.getProperties() == null) {
+            changes.add("Schema is missing on source");
+            return changes;
+        } else if (tgtSchema == null || tgtSchema.getProperties() == null) {
+            changes.add("Schema is missing on target");
+            return changes;
+        }
+
         Set<String> srcProps = srcSchema.getProperties().keySet();
         Set<String> tgtProps = tgtSchema.getProperties().keySet();
 
