@@ -24,13 +24,17 @@ import static io.swagger.v3.oas.models.PathItem.HttpMethod;
 public class OpenApiSpecCompareService {
 
     public SpecComparisonResponse analyzeBreakingChanges(String srcPath, String tgtPath) {
-        SpecComparisonResponse specComparisonResponse = new SpecComparisonResponse();
+
         SwaggerParseResult srcParseResult = new OpenAPIParser().readLocation(srcPath, null, null);
         SwaggerParseResult tgtParseResult = new OpenAPIParser().readLocation(tgtPath, null, null);
 
-        specComparisonResponse.setPaths(breakingChangesForPath(srcParseResult.getOpenAPI(), tgtParseResult.getOpenAPI()));
-        specComparisonResponse.setSchemas(breakingChangesForSchemas(srcParseResult.getOpenAPI().getComponents().getSchemas(), tgtParseResult.getOpenAPI().getComponents().getSchemas()));
+        return analyzeBreakingChanges(srcParseResult, tgtParseResult);
+    }
 
+    public SpecComparisonResponse analyzeBreakingChanges(SwaggerParseResult source, SwaggerParseResult target) {
+        SpecComparisonResponse specComparisonResponse = new SpecComparisonResponse();
+        specComparisonResponse.setPaths(breakingChangesForPath(source.getOpenAPI(), target.getOpenAPI()));
+        specComparisonResponse.setSchemas(breakingChangesForSchemas(source.getOpenAPI().getComponents().getSchemas(), target.getOpenAPI().getComponents().getSchemas()));
         return specComparisonResponse;
     }
 
@@ -180,7 +184,7 @@ public class OpenApiSpecCompareService {
                 Parameter srcParameter = getParameter(v, srcOperation.getParameters());
                 Parameter tgtParameter = getParameter(v, tgtOperation.getParameters());
                 List<String> paramChanges = compareProperties(v, srcParameter.getSchema(), tgtParameter.getSchema());
-                if (!changes.isEmpty()) {
+                if (!paramChanges.isEmpty()) {
                     changes.addAll(paramChanges);
                 }
                 if (!srcParameter.getIn().equals(tgtParameter.getIn())) {
@@ -198,7 +202,6 @@ public class OpenApiSpecCompareService {
 
             if (hasValidResponse(srcOperation.getResponses()) && hasValidResponse(tgtOperation.getResponses())) {
                 responseContentChanges.putAll(compareApiResponsesChanges(srcOperation.getResponses(), tgtOperation.getResponses(), srcOpenApi, tgtOpenApi));
-                ;
             } else if (!hasValidResponse(srcOperation.getResponses()) && hasValidResponse(tgtOperation.getResponses())) {
                 tgtOperation.getResponses().forEach((k, v) -> {
                     responseContentChanges.put(k, new LinkedHashMap<>());
@@ -224,7 +227,7 @@ public class OpenApiSpecCompareService {
         PathItemDetails pathItemDetails = new PathItemDetails();
         pathItemDetails.setChanges(changes);
         pathItemDetails.setRequestBodyChanges(requestBodyChanges);
-        pathItemDetails.setResponseContentChanges(responseContentChanges);
+        pathItemDetails.setResponseContentChanges(responseContentChanges.isEmpty() ? null : responseContentChanges);
         return pathItemDetails.hasChange() ? pathItemDetails : null;
     }
 
@@ -479,8 +482,7 @@ public class OpenApiSpecCompareService {
     }
 
     public List<String> compareProperties(String propName, Schema srcPropDetails, Schema tgtPropDetails) {
-        List<String> changes = new ArrayList<>();
-        changes.addAll(comparePropertyType(propName, srcPropDetails, tgtPropDetails));
+        List<String> changes = new ArrayList<>(comparePropertyType(propName, srcPropDetails, tgtPropDetails));
         if ("array".equals(srcPropDetails.getType())
                 && srcPropDetails.getType() != null && tgtPropDetails.getType() != null
                 && srcPropDetails.getType().equals(tgtPropDetails.getType())) {

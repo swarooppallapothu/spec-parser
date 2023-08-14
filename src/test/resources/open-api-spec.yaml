@@ -1,0 +1,2181 @@
+openapi: 3.0.0
+info:
+  title: Onboarding Proxies
+  version: 1.0.1
+  description: 'Proxy API for onboarding to validate, get rates and get terms.'
+  contact:
+    name: Apply Platform Development
+    email: IC.Apply.Leads@usbank.com
+servers:
+  - url: https://api.usbank.com/onboarding/apply/application-fulfillment/v1
+    description: Generated server url
+tags:
+  - name: onboarding
+paths:
+  /utilities/validateAddress:
+    post:
+      tags:
+        - address-validation-rest-controller
+      operationId: validateAddress
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/ScrubAddressRequest'
+      responses:
+        '200':
+          description: default response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScrubAddressReply'
+  /utilities/validateAddresses:
+    post:
+      tags:
+        - address-validation-rest-controller
+      operationId: validateAddresses
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/ScrubAddressRequest'
+      responses:
+        '200':
+          description: default response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScrubAddressReply'
+  /utilities/scrubAddress:
+    post:
+      tags:
+        - scrub-address-rest-controller
+      operationId: scrubAddress
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/ScrubAddressRequest'
+      responses:
+        '200':
+          description: default response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScrubAddressReply'
+  /utilities/scrubAddresses:
+    post:
+      tags:
+        - scrub-address-rest-controller
+      operationId: scrubAddresses
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/ScrubAddressRequest'
+      responses:
+        '200':
+          description: default response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScrubAddressReply'
+  /utilities/tenant-authorization:
+    get:
+      tags:
+        - tenant-authorization-controller
+      operationId: getIDToken
+      parameters:
+        - name: authCode
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: clientId
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+        - name: tenant
+          in: query
+          required: false
+          schema:
+            type: string
+            default: usbank
+        - name: clientType
+          in: query
+          required: false
+          explode: true
+          schema:
+            type: string
+            enum:
+              - INTERNAL
+              - EXTERNAL
+              - NONE
+        - $ref: '#/components/parameters/Authorization'
+      responses:
+        '200':
+          description: default response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizationResponse'
+  /utilities/getcreditcarddirectmailoffer:
+    post:
+      tags:
+        - credit-card-mail-offer-rest-controller
+      operationId: getCreditCardMailOffer
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/CreditCardMailOfferRequest'
+      responses:
+        '200':
+          description: default response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetMailFileResponse'
+  /utilities/deposit/v1/{productType}/rates:
+    get:
+      tags:
+        - retrieve-deposit-rates-rest-controller
+      operationId: getDepositRates
+      parameters:
+        - name: productType
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: zipCode
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: county
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: alliance
+          in: query
+          required: false
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Authorization'
+      responses:
+        '200':
+          description: default response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestRateToolServiceResponse'
+  /utilities/enrollment/verifyaccount:
+    post:
+      tags:
+        - enrollment-controller
+      operationId: verifyAccount
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/GetAccountDetailRequest'
+      responses:
+        '200':
+          description: default response
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/VerifyAccountResponse'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyAccountResponse'
+  /utilities/creditcardfees:
+    post:
+      tags:
+        - credit-card-application-rest-controller
+      operationId: getCreditCardFeeInformation
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/CreditCardOfferInformationRequest'
+      responses:
+        '200':
+          description: default response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditCardOfferInformationResponse'
+  /utilities/r2/creditcardfees:
+    post:
+      tags:
+        - credit-card-details-application-rest-controller
+      operationId: getCreditCardDetailsFeeInformation
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/CreditCardOfferDetailsInformationRequest'
+      responses:
+        '200':
+          description: default response
+          content:
+            application/json:
+              examples:
+                CreditCardOfferDetailsInformationResponse:
+                  value: |
+                    {
+                      "requestedBUNumber": 1,
+                      "resolvedBULevel": "String",
+                      "resolvedBUNumber": 1,
+                      "marketingChannelID": "String",
+                      "returnUsageCode": "String",
+                      "ownerBUNumber": 1,
+                      "returnTransitionFlag": "String",
+                      "offerPaletteNumber": 1,
+                      "offerCount": 1,
+                      "offers": [
+                        {
+                          "offerDetails": {
+                            "aprepCode": "String",
+                            "acapsLocationID": "String",
+                            "aoOfferTypeNumber": 1,
+                            "defaultPercentage": "String",
+                            "offerID": "String",
+                            "altPFDTReasonCode": "String",
+                            "offerNumber": 1,
+                            "wptCode": 1,
+                            "sourceCode": 1,
+                            "offerEffectiveDate": "String",
+                            "acapsProductCode": "String",
+                            "offerExpiryDate": "String",
+                            "cardTypeCode": "String",
+                            "altICSProductNumber": 1,
+                            "icsProductNumber": 1,
+                            "teamSiteID": "String",
+                            "exceptionCodes": "String"
+                          },
+                          "productDetails": {
+                            "productLineCode": "String",
+                            "introRateTypeCode": "String",
+                            "introRateMax": "String",
+                            "securedIndicator": "String",
+                            "introRateRXDate": "String",
+                            "creditDepartPhoneNumber": "String",
+                            "portfolioBUIdCode": "String",
+                            "pacPhoneNumber": "String",
+                            "productRewardRollupCode": "String",
+                            "cosignerIndicator": "String",
+                            "employeeIndicator": "String",
+                            "introRateRXMethod": "String",
+                            "productName": "String",
+                            "webappMailAdd": "String",
+                            "webappMailAdd2": "String",
+                            "productLineSegmentID": 1,
+                            "studentIndicator": "String",
+                            "introRateMinMonths": 1,
+                            "prodCardTypeTable": "String",
+                            "balanceTransferIndicator": "String",
+                            "printAppName": "String",
+                            "introRateMin": "String",
+                            "introRateMaxMonths": 1,
+                            "productDescription": "String"
+                          },
+                          "locationSpecificData": {
+                            "locationName": "String",
+                            "clientType": "String",
+                            "issuerBU": 1,
+                            "brandingLocationName": "String"
+                          },
+                          "productDetailData": {
+                            "calculatedMinAPR": "String",
+                            "calculatedMaxAPR": "String",
+                            "commonProductDetailData": {
+                              "rewardInitialOfferAmount": "String",
+                              "firstUseInitOfferAmount": "String",
+                              "rewardsFlag": "String",
+                              "rewardEarningRate": "String",
+                              "enrollInitOfferAmount": "String",
+                              "pacPhoneNumber": "String",
+                              "productNumber": 1,
+                              "productCardType": "String",
+                              "rewardRollupCode": "String"
+                            },
+                            "productVariableData": [
+                              {
+                                "purchasePenaltyRateTypeCode": "String",
+                                "introRateMaxMts": 1,
+                                "introRateExpMtd": "String",
+                                "introRateExpDte": "String",
+                                "introBTRateTypeCode": "String",
+                                "introRateMax": "String",
+                                "interestRateTypeCode": "String",
+                                "travelRewardsFee": "String",
+                                "introBTBaseFee": "String",
+                                "cashATM2IndFee": "String",
+                                "btMaxFee": "String",
+                                "additionalCardFee": "String",
+                                "indexRate": "String",
+                                "introBTFeeRate": "String",
+                                "introBTRateMax": "String",
+                                "cashODIndFee": "String",
+                                "cashAdvanceMinAPR": "String",
+                                "introCashAdvancePenaltyCeilingRate": "String",
+                                "introRateMin": "String",
+                                "productDescription": "String",
+                                "productName": "String",
+                                "foreignPurchaseUSDFee": "String",
+                                "thresholdFeeAmount2": "String",
+                                "cashATM2RateFee": "String",
+                                "thresholdFeeAmount1": "String",
+                                "purchasePenalityIntIndex": "String",
+                                "purchaseMargin": "String",
+                                "btRateTypeCode": "String",
+                                "introRateMinMts": 1,
+                                "latePaymentNumber3": 1,
+                                "latePaymentNumber4": 1,
+                                "latePaymentNumber1": 1,
+                                "latePaymentNumber2": 1,
+                                "latePaymentNumber5": 1,
+                                "cashEquivalantBaseFee": "String",
+                                "purchasePenaltyRate": "String",
+                                "purchaseFloorMaxAPR": "String",
+                                "introBTRTRdmDys": 1,
+                                "intCashAdvanceFloorMaxAPR": "String",
+                                "purchaseCeilingRate": "String",
+                                "purchaseMinAPR": "String",
+                                "purchasePenaltyMargin": "String",
+                                "introBTFeesRdmDys": 1,
+                                "purchaseMinRate": "String",
+                                "cashODRateFee": "String",
+                                "introCARate": "String",
+                                "introPurchaseRate": "String",
+                                "overLimitEligibleFlag": "String",
+                                "cashODMaxFee": "String",
+                                "thresholdFeeAmount5": "String",
+                                "thresholdFeeAmount4": "String",
+                                "thresholdFeeAmount3": "String",
+                                "introRateTypeCode": "String",
+                                "purchaseMaxRate": "String",
+                                "cashEquivalantFeeRate": "String",
+                                "riskTierInformation": [
+                                  {
+                                    "annualFeeInformation": {
+                                      "annualFeeBenchmarkCode": "String",
+                                      "annualAOFeeAmount": "String",
+                                      "annualFeeFreeMonths": 1,
+                                      "annualFeePurchaseAmount": "String",
+                                      "annualFeeAmount": "String",
+                                      "annualAEFeeAmount": "String"
+                                    }
+                                  }
+                                ],
+                                "introBTRateMin": "String",
+                                "introBTRateMonths": 1,
+                                "purchasePenaltyMinAPR": "String",
+                                "btMaxAPR": "String",
+                                "cashTellMaxFee": "String",
+                                "btFloorMaxAPR": "String",
+                                "cashODBaseFee": "String",
+                                "btMaxRate": "String",
+                                "introBTRateMaxMts": 1,
+                                "introBTRTRdmDte": "String",
+                                "introBTFeesRdmFlag": "String",
+                                "introBTFeesRdmDte": "String",
+                                "btMinRate": "String",
+                                "intPurchansePenalityFloorMaxAPR": "String",
+                                "cashAdvanceRateTypeCode": "String",
+                                "foreignATMUSDFee": "String",
+                                "productLineCode": "String",
+                                "introCashAdvancePenalityRateTypeCode": "String",
+                                "introBTFeeMax": "String",
+                                "btIndexRate": "String",
+                                "btMinAPR": "String",
+                                "foreignATMNonUSDFee": "String",
+                                "introRateMonths": 1,
+                                "introBTFeeIndicator": "String",
+                                "introCashAdvanceMaxRate": "String",
+                                "introBTRateExpMtd": "String",
+                                "introBTRateExpDte": "String",
+                                "introBTMargin": "String",
+                                "introBTRate": "String",
+                                "cashEquivalantFeeIndicator": "String",
+                                "overLimitFee": "String",
+                                "foreignPurchaseNonUSDFee": "String",
+                                "balanceTransferIndicator": "String",
+                                "introRate": "String",
+                                "introCashAdvancePenaltyMinAPR": "String",
+                                "latePaymentFee1": "String",
+                                "cashAdvanceCeilingRate": "String",
+                                "cashEquivalantMaxFee": "String",
+                                "latePaymentFee4": "String",
+                                "latePaymentFee5": "String",
+                                "latePaymentFee2": "String",
+                                "latePaymentFee3": "String",
+                                "introCashAdvancePenalityMargin": "String",
+                                "cashConvMaxFee": "String",
+                                "productLevel": "String",
+                                "introBTRTRdmFlag": "String",
+                                "introBTRateMinMts": 1,
+                                "cashConvIndFee": "String",
+                                "purchasePenaltyCeilingRate": "String",
+                                "cashAdvanceIndex": "String",
+                                "introBTFeesExpMtd": "String",
+                                "introBTFeesExpDte": "String",
+                                "cashATM2BaseFee": "String",
+                                "cashTellRateFee": "String",
+                                "introCashAdvancePenalityRate": "String",
+                                "cashTellBasefee": "String",
+                                "introCashAdvanceMinRate": "String",
+                                "btRateFee": "String",
+                                "introCashAdvanceMargin": "String",
+                                "returnPaymentFee": "String",
+                                "btMargin": "String",
+                                "cashConvRateFee": "String",
+                                "portfolioBUIdCode": "String",
+                                "cashConvBaseFee": "String",
+                                "introBTFeeMonths": 1,
+                                "btBaseFee": "String",
+                                "productType": 1,
+                                "productTypeShortDescription": "String",
+                                "btIndicatorFee": "String",
+                                "cashTellIndFee": "String",
+                                "introBTIndexRate": "String",
+                                "cashATM2MaxFee": "String"
+                              }
+                            ],
+                            "calledModuleData": {
+                              "gracePeriodMinDays": 1,
+                              "tddPhoneNumber": "String",
+                              "creditorName": "String",
+                              "promoCodeData": {
+                                "promoCodeTable": [
+                                  {
+                                    "promoCode": 1
+                                  }
+                                ],
+                                "promoCodeCount": 1,
+                                "promoDescription": "String",
+                                "promoExpirationdate": "String"
+                              },
+                              "dmCustEnterPhone": "String",
+                              "dmBankEnterPhone": "String",
+                              "callCenterPhoneNumber": "String",
+                              "minimumFinanceCharge": "String",
+                              "custEnterPhone": "String",
+                              "accountMgmtFee": "String",
+                              "callCenterPOBox": "String",
+                              "bankEnterPhone": "String",
+                              "gracePeriodMaxDays": 1,
+                              "disclosureOfferFlag": "String",
+                              "disclosureOfferAINumber": "String",
+                              "callCenterCityStateZip": "String"
+                            }
+                          }
+                        }
+                      ],
+                      "locationDetailData": {
+                        "brandingLOCName": "String",
+                        "locationName": "String",
+                        "clientType": "String",
+                        "creditorName": "String",
+                        "nbrdPhoneNbr": "String",
+                        "agreementFlag": 1
+                      }
+                    }
+  /utilities/r3/creditcardfees:
+    post:
+      tags:
+        - credit-card-details-application-rest-controller
+      operationId: getCreditCardDetailsFeeInformationR3
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/CreditCardOfferDetailsInformationRequest'
+      responses:
+        '200':
+          description: default response
+          content:
+            application/json:
+              examples:
+                CreditCardOfferDetailsInformationResponse:
+                  value: |
+                    {
+                      "requestedBUNumber": 1,
+                      "resolvedBULevel": "String",
+                      "resolvedBUNumber": 1,
+                      "marketingChannelID": "String",
+                      "returnUsageCode": "String",
+                      "ownerBUNumber": 1,
+                      "returnTransitionFlag": "String",
+                      "offerPaletteNumber": 1,
+                      "offerCount": 1,
+                      "offers": [
+                        {
+                          "offerDetails": {
+                            "aprepCode": "String",
+                            "acapsLocationID": "String",
+                            "aoOfferTypeNumber": 1,
+                            "defaultPercentage": "String",
+                            "offerID": "String",
+                            "altPFDTReasonCode": "String",
+                            "offerNumber": 1,
+                            "wptCode": 1,
+                            "sourceCode": 1,
+                            "offerEffectiveDate": "String",
+                            "acapsProductCode": "String",
+                            "offerExpiryDate": "String",
+                            "cardTypeCode": "String",
+                            "altICSProductNumber": 1,
+                            "icsProductNumber": 1,
+                            "teamSiteID": "String",
+                            "exceptionCodes": "String"
+                          },
+                          "productDetails": {
+                            "productLineCode": "String",
+                            "introRateTypeCode": "String",
+                            "introRateMax": "String",
+                            "securedIndicator": "String",
+                            "introRateRXDate": "String",
+                            "creditDepartPhoneNumber": "String",
+                            "portfolioBUIdCode": "String",
+                            "pacPhoneNumber": "String",
+                            "productRewardRollupCode": "String",
+                            "cosignerIndicator": "String",
+                            "employeeIndicator": "String",
+                            "introRateRXMethod": "String",
+                            "productName": "String",
+                            "webappMailAdd": "String",
+                            "webappMailAdd2": "String",
+                            "productLineSegmentID": 1,
+                            "studentIndicator": "String",
+                            "introRateMinMonths": 1,
+                            "prodCardTypeTable": "String",
+                            "balanceTransferIndicator": "String",
+                            "printAppName": "String",
+                            "introRateMin": "String",
+                            "introRateMaxMonths": 1,
+                            "productDescription": "String"
+                          },
+                          "locationSpecificData": {
+                            "locationName": "String",
+                            "clientType": "String",
+                            "issuerBU": 1,
+                            "brandingLocationName": "String"
+                          },
+                          "productDetailData": {
+                            "calculatedMinAPR": "String",
+                            "calculatedMaxAPR": "String",
+                            "commonProductDetailData": {
+                              "rewardInitialOfferAmount": "String",
+                              "firstUseInitOfferAmount": "String",
+                              "rewardsFlag": "String",
+                              "rewardEarningRate": "String",
+                              "enrollInitOfferAmount": "String",
+                              "pacPhoneNumber": "String",
+                              "productNumber": 1,
+                              "productCardType": "String",
+                              "rewardRollupCode": "String"
+                            },
+                            "productVariableData": [
+                              {
+                                "purchasePenaltyRateTypeCode": "String",
+                                "introRateMaxMts": 1,
+                                "introRateExpMtd": "String",
+                                "introRateExpDte": "String",
+                                "introBTRateTypeCode": "String",
+                                "introRateMax": "String",
+                                "interestRateTypeCode": "String",
+                                "travelRewardsFee": "String",
+                                "introBTBaseFee": "String",
+                                "cashATM2IndFee": "String",
+                                "btMaxFee": "String",
+                                "additionalCardFee": "String",
+                                "indexRate": "String",
+                                "introBTFeeRate": "String",
+                                "introBTRateMax": "String",
+                                "cashODIndFee": "String",
+                                "cashAdvanceMinAPR": "String",
+                                "introCashAdvancePenaltyCeilingRate": "String",
+                                "introRateMin": "String",
+                                "productDescription": "String",
+                                "productName": "String",
+                                "foreignPurchaseUSDFee": "String",
+                                "thresholdFeeAmount2": "String",
+                                "cashATM2RateFee": "String",
+                                "thresholdFeeAmount1": "String",
+                                "purchasePenalityIntIndex": "String",
+                                "purchaseMargin": "String",
+                                "btRateTypeCode": "String",
+                                "introRateMinMts": 1,
+                                "latePaymentNumber3": 1,
+                                "latePaymentNumber4": 1,
+                                "latePaymentNumber1": 1,
+                                "latePaymentNumber2": 1,
+                                "latePaymentNumber5": 1,
+                                "cashEquivalantBaseFee": "String",
+                                "purchasePenaltyRate": "String",
+                                "purchaseFloorMaxAPR": "String",
+                                "introBTRTRdmDys": 1,
+                                "intCashAdvanceFloorMaxAPR": "String",
+                                "purchaseCeilingRate": "String",
+                                "purchaseMinAPR": "String",
+                                "purchasePenaltyMargin": "String",
+                                "introBTFeesRdmDys": 1,
+                                "purchaseMinRate": "String",
+                                "cashODRateFee": "String",
+                                "introCARate": "String",
+                                "introPurchaseRate": "String",
+                                "overLimitEligibleFlag": "String",
+                                "cashODMaxFee": "String",
+                                "thresholdFeeAmount5": "String",
+                                "thresholdFeeAmount4": "String",
+                                "thresholdFeeAmount3": "String",
+                                "introRateTypeCode": "String",
+                                "purchaseMaxRate": "String",
+                                "cashEquivalantFeeRate": "String",
+                                "riskTierInformation": [
+                                  {
+                                    "annualFeeInformation": {
+                                      "annualFeeBenchmarkCode": "String",
+                                      "annualAOFeeAmount": "String",
+                                      "annualFeeFreeMonths": 1,
+                                      "annualFeePurchaseAmount": "String",
+                                      "annualFeeAmount": "String",
+                                      "annualAEFeeAmount": "String"
+                                    }
+                                  }
+                                ],
+                                "introBTRateMin": "String",
+                                "introBTRateMonths": 1,
+                                "purchasePenaltyMinAPR": "String",
+                                "btMaxAPR": "String",
+                                "cashTellMaxFee": "String",
+                                "btFloorMaxAPR": "String",
+                                "cashODBaseFee": "String",
+                                "btMaxRate": "String",
+                                "introBTRateMaxMts": 1,
+                                "introBTRTRdmDte": "String",
+                                "introBTFeesRdmFlag": "String",
+                                "introBTFeesRdmDte": "String",
+                                "btMinRate": "String",
+                                "intPurchansePenalityFloorMaxAPR": "String",
+                                "cashAdvanceRateTypeCode": "String",
+                                "foreignATMUSDFee": "String",
+                                "productLineCode": "String",
+                                "introCashAdvancePenalityRateTypeCode": "String",
+                                "introBTFeeMax": "String",
+                                "btIndexRate": "String",
+                                "btMinAPR": "String",
+                                "foreignATMNonUSDFee": "String",
+                                "introRateMonths": 1,
+                                "introBTFeeIndicator": "String",
+                                "introCashAdvanceMaxRate": "String",
+                                "introBTRateExpMtd": "String",
+                                "introBTRateExpDte": "String",
+                                "introBTMargin": "String",
+                                "introBTRate": "String",
+                                "cashEquivalantFeeIndicator": "String",
+                                "overLimitFee": "String",
+                                "foreignPurchaseNonUSDFee": "String",
+                                "balanceTransferIndicator": "String",
+                                "introRate": "String",
+                                "introCashAdvancePenaltyMinAPR": "String",
+                                "latePaymentFee1": "String",
+                                "cashAdvanceCeilingRate": "String",
+                                "cashEquivalantMaxFee": "String",
+                                "latePaymentFee4": "String",
+                                "latePaymentFee5": "String",
+                                "latePaymentFee2": "String",
+                                "latePaymentFee3": "String",
+                                "introCashAdvancePenalityMargin": "String",
+                                "cashConvMaxFee": "String",
+                                "productLevel": "String",
+                                "introBTRTRdmFlag": "String",
+                                "introBTRateMinMts": 1,
+                                "cashConvIndFee": "String",
+                                "purchasePenaltyCeilingRate": "String",
+                                "cashAdvanceIndex": "String",
+                                "introBTFeesExpMtd": "String",
+                                "introBTFeesExpDte": "String",
+                                "cashATM2BaseFee": "String",
+                                "cashTellRateFee": "String",
+                                "introCashAdvancePenalityRate": "String",
+                                "cashTellBasefee": "String",
+                                "introCashAdvanceMinRate": "String",
+                                "btRateFee": "String",
+                                "introCashAdvanceMargin": "String",
+                                "returnPaymentFee": "String",
+                                "btMargin": "String",
+                                "cashConvRateFee": "String",
+                                "portfolioBUIdCode": "String",
+                                "cashConvBaseFee": "String",
+                                "introBTFeeMonths": 1,
+                                "btBaseFee": "String",
+                                "productType": 1,
+                                "productTypeShortDescription": "String",
+                                "btIndicatorFee": "String",
+                                "cashTellIndFee": "String",
+                                "introBTIndexRate": "String",
+                                "cashATM2MaxFee": "String"
+                              }
+                            ],
+                            "calledModuleData": {
+                              "gracePeriodMinDays": 1,
+                              "tddPhoneNumber": "String",
+                              "creditorName": "String",
+                              "promoCodeData": {
+                                "promoCodeTable": [
+                                  {
+                                    "promoCode": 1
+                                  }
+                                ],
+                                "promoCodeCount": 1,
+                                "promoDescription": "String",
+                                "promoExpirationdate": "String"
+                              },
+                              "dmCustEnterPhone": "String",
+                              "dmBankEnterPhone": "String",
+                              "callCenterPhoneNumber": "String",
+                              "minimumFinanceCharge": "String",
+                              "custEnterPhone": "String",
+                              "accountMgmtFee": "String",
+                              "callCenterPOBox": "String",
+                              "bankEnterPhone": "String",
+                              "gracePeriodMaxDays": 1,
+                              "disclosureOfferFlag": "String",
+                              "disclosureOfferAINumber": "String",
+                              "callCenterCityStateZip": "String"
+                            }
+                          }
+                        }
+                      ],
+                      "locationDetailData": {
+                        "brandingLOCName": "String",
+                        "locationName": "String",
+                        "clientType": "String",
+                        "creditorName": "String",
+                        "nbrdPhoneNbr": "String",
+                        "agreementFlag": 1
+                      }
+                    }
+  /utilities/oad/terms-and-conditions:
+    post:
+      tags:
+        - oad-terms-and-conditions-rest-controller
+      operationId: termsAndConditions
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/OADTermsAndConditionsRequest'
+      responses:
+        '200':
+          description: default response
+          content:
+            application/json:
+              schema:
+                type: string
+  /utilities/oad/terms-and-conditions/approved:
+    post:
+      tags:
+        - oad-terms-and-conditions-rest-controller
+      operationId: termsAndConditionsApproved
+      parameters:
+        - $ref: '#/components/parameters/Authorization'
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/OADTermsAndConditionsRequest'
+      responses:
+        '200':
+          description: default response
+          content:
+            application/json:
+              schema:
+                type: string
+  /utilities/virtualcardtoken/{token}:
+    get:
+      tags:
+        - virtual-card-token-rest-controller
+      operationId: getCardInformation
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Authorization'
+      responses:
+        '200':
+          description: default response
+          content:
+            '*/*':
+              schema:
+                $ref: '#/components/schemas/InstantAccessCardDetails'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstantAccessCardDetails'
+  /utilities/validate/otp:
+    post:
+      summary: validates otp
+      description: ''
+      operationId: ''
+      responses:
+        default:
+          description: Default error sample response
+      tags:
+        - auth-otp-controller
+  /utilities/r2/validate/otp:
+    post:
+      summary: validates otp
+      description: ''
+      operationId: ''
+      responses:
+        default:
+          description: Default error sample response
+      tags:
+        - auth-otp-controller
+  /{packageId}/getPDF/{documentId}:
+    get:
+      summary: GetPDF
+      description: ''
+      operationId: getPDF
+      parameters:
+        - name: packageId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Authorization'
+      responses:
+        default:
+          description: Default error sample response
+      tags:
+        - dss-download-rest-controller
+  /relateduserdetails:
+    post:
+      summary: ''
+      description: ''
+      operationId: relatedUserDetails
+      parameters:
+        - name: applicationId
+          in: query
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Authorization'
+      responses:
+        default:
+          description: Default error sample response
+      tags:
+        - related-user-details-rest-controller
+  /myvest/getGoalDetails:
+    post:
+      summary: ''
+      description: ''
+      operationId: getInvestmentGoalDetails
+      parameters:
+        - name: uID
+          in: query
+          required: true
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Authorization'
+      responses:
+        default:
+          description: Default error sample response
+      tags:
+        - myvest-rest-controller
+  /utilities/validate-routing-number/{routingNumber}:
+    get:
+      tags:
+        - routing-number-validation-rest-controller
+      operationId: validateRoutingNumber
+      parameters:
+        - name: routingNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: default response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutingNumberValidationResponse'
+  /utilities/alliance/offers:
+    post:
+      tags:
+        - alliance-offers-rest-controller
+      operationId: getAllianceOffers
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/GetAllianceOffersRequest'
+      responses:
+        '200':
+          description: default response
+          content:
+            application/json:
+              examples:
+                allianceOffersResponse:
+                  value: |-
+                    {
+                        "offers": [
+                            {
+                                "id": "cards-stdM3GX7Q6R431863556874CONSUMER",
+                                "productName": "State Farm® Good Neighbor Visa® Card",
+                                "productDescription": "0% intro APR for 18 billing cycles, Up to $200 Auto Deductible Reimbursement and $600 in Cell Phone Protection",
+                                "aoOfferTypeNumber": "108",
+                                "OfferID": "M3GX7Q6R43",
+                                "offerConfirmationCode": null,
+                                "offerProductCode": "CCD",
+                                "offerInternalOfferId": "M3GX7Q6R43",
+                                "offerSourceCode": "56874",
+                                "offerLocationCode": "18635",
+                                "offerUsageCode": "ASSIST",
+                                "offerProductType": "CARDS",
+                                "offerCustomerType": "CONSUMER",
+                                "offerType": "STANDARD",
+                                "acapsProductCode": "SFPV",
+                                "risktier": null,
+                                "offerSubProductCode": "SG",
+                                "icsproductNumber": "3585",
+                                "directMailType": null,
+                                "offerRecipientDetails": {},
+                                "branchCode": null,
+                                "offerZipCode": null,
+                                "acapsId": null,
+                                "contentDetails": {
+                                    "sellingPoints": [
+                                        "0% intro APR for 18 billing cycles on purchases and balance transfers. Plus, no annual fee.",
+                                        "Beneficial Safeguards included:",
+                                        "Auto Deductible Reimbursement",
+                                        "Cell Phone Protection",
+                                        "Dovly Uplift",
+                                        "Purchase Security "
+                                    ],
+                                    "disclaimers": []
+                                }
+                            }
+                        ]
+                    }
+  /utilities/alliance/offers/update:
+    post:
+      tags:
+        - alliance-offers-rest-controller
+      operationId: updateAllianceOffers
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              $ref: '#/components/schemas/UpdateAllianceOffersRequest'
+      responses:
+        '200':
+          description: default response
+          content:
+            application/json:
+              examples:
+                allianceOffersResponse:
+                  value: |-
+                    {
+                      "status": "SUCCESS"
+                    }
+components:
+  parameters:
+    Authorization:
+      name: Authorization
+      in: header
+      required: true
+      description: Basic Auth (API key/secret) token for authorization
+      schema:
+        type: string
+  schemas:
+    Address:
+      type: object
+      properties:
+        usAddress:
+          $ref: '#/components/schemas/USAddress'
+        foreignAddress:
+          $ref: '#/components/schemas/ForeignAddress'
+    ForeignAddress:
+      required:
+        - addressLine1
+        - countryCode
+      type: object
+      properties:
+        supplementalAddressLine:
+          type: string
+          xml:
+            name: SupplementalAddressLine
+        addressLine1:
+          type: string
+          xml:
+            name: AddressLine1
+        addressLine2:
+          type: string
+          xml:
+            name: AddressLine2
+        city:
+          type: string
+          xml:
+            name: City
+        state:
+          type: string
+          xml:
+            name: State
+        postalCode:
+          type: string
+          xml:
+            name: PostalCode
+        countryCode:
+          type: string
+          xml:
+            name: CountryCode
+    ScrubAddressRequest:
+      type: object
+      properties:
+        customerAddress1:
+          $ref: '#/components/schemas/Address'
+      xml:
+        name: ScrubAddressRequest
+    USAddress:
+      required:
+        - addressLine1
+        - city
+        - stateCode
+        - zipCode
+      type: object
+      properties:
+        supplementalAddressLine:
+          type: string
+          xml:
+            name: SupplementalAddressLine
+        addressLine1:
+          type: string
+          xml:
+            name: AddressLine1
+        addressLine2:
+          type: string
+          xml:
+            name: AddressLine2
+        city:
+          type: string
+          xml:
+            name: City
+        stateCode:
+          type: string
+          xml:
+            name: StateCode
+        zipCode:
+          type: string
+          xml:
+            name: ZipCode
+        zipPlus4:
+          type: string
+          xml:
+            name: ZipPlus4
+        deliveryPointIdentifier:
+          type: string
+          xml:
+            name: DeliveryPointIdentifier
+        carrierRouteIdentifier:
+          type: string
+          xml:
+            name: CarrierRouteIdentifier
+        countryCode:
+          type: string
+          xml:
+            name: CountryCode
+        checkDigit:
+          type: integer
+          xml:
+            name: CheckDigit
+    AdditionalStatus:
+      required:
+        - severity
+        - statusCode
+        - statusDescription
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          xml:
+            name: StatusCode
+        severity:
+          type: string
+          xml:
+            name: Severity
+          enum:
+            - WARNING
+            - INFO
+            - ERROR
+        statusDescription:
+          type: string
+          xml:
+            name: StatusDescription
+        serverStatusCode:
+          type: string
+          xml:
+            name: ServerStatusCode
+        serverStatusDescription:
+          type: string
+          xml:
+            name: ServerStatusDescription
+    AddressResponse:
+      required:
+        - addressLine1
+      type: object
+      properties:
+        supplementalAddressLine:
+          type: string
+          xml:
+            name: SupplementalAddressLine
+        addressLine1:
+          type: string
+          xml:
+            name: AddressLine1
+        addressLine2:
+          type: string
+          xml:
+            name: AddressLine2
+        city:
+          type: string
+          xml:
+            name: City
+        stateCode:
+          type: string
+          xml:
+            name: StateCode
+        state:
+          type: string
+          xml:
+            name: State
+        zipCode:
+          type: string
+          xml:
+            name: ZipCode
+        zipPlus4:
+          type: string
+          xml:
+            name: ZipPlus4
+        postalCode:
+          type: string
+          xml:
+            name: PostalCode
+        deliveryPointIdentifier:
+          type: string
+          xml:
+            name: DeliveryPointIdentifier
+        carrierRouteIdentifier:
+          type: string
+          xml:
+            name: CarrierRouteIdentifier
+        countryCode:
+          type: string
+          xml:
+            name: CountryCode
+        checkDigit:
+          type: integer
+          xml:
+            name: CheckDigit
+        usaddressSwitch:
+          type: boolean
+    FinalistScrubbedStreetAddress:
+      type: object
+      properties:
+        addressLine1:
+          type: string
+          xml:
+            name: AddressLine1
+        addressLine2:
+          type: string
+          xml:
+            name: AddressLine2
+        streetNumber:
+          type: string
+          xml:
+            name: StreetNumber
+        preStreetDirection:
+          type: string
+          xml:
+            name: PreStreetDirection
+        streetName:
+          type: string
+          xml:
+            name: StreetName
+        streetType:
+          type: string
+          xml:
+            name: StreetType
+        streetType2:
+          type: string
+          xml:
+            name: StreetType2
+        postStreetDirection:
+          type: string
+          xml:
+            name: PostStreetDirection
+        ruralRouteNum:
+          type: string
+          xml:
+            name: RuralRouteNum
+        apartmentNumber:
+          type: string
+          xml:
+            name: ApartmentNumber
+        city:
+          type: string
+          xml:
+            name: City
+        state:
+          type: string
+          xml:
+            name: State
+        zipCode:
+          type: string
+          xml:
+            name: ZipCode
+        zipPlus4:
+          type: string
+          xml:
+            name: ZipPlus4
+    ImpactedAddressFields:
+      required:
+        - apartmentNumberMaskCode
+        - cityMaskCode
+        - highwayContractMaskCode
+        - ruralRouteMaskCode
+        - stateMaskCode
+        - streetDirectionMaskCode
+        - streetNameMaskCode
+        - streetNumberMaskCode
+        - streetTypeMaskCode
+        - zipMaskCode
+      type: object
+      properties:
+        streetNumberMaskCode:
+          type: string
+          xml:
+            name: StreetNumberMaskCode
+        streetNameMaskCode:
+          type: string
+          xml:
+            name: StreetNameMaskCode
+        streetTypeMaskCode:
+          type: string
+          xml:
+            name: StreetTypeMaskCode
+        streetDirectionMaskCode:
+          type: string
+          xml:
+            name: StreetDirectionMaskCode
+        ruralRouteMaskCode:
+          type: string
+          xml:
+            name: RuralRouteMaskCode
+        highwayContractMaskCode:
+          type: string
+          xml:
+            name: HighwayContractMaskCode
+        apartmentNumberMaskCode:
+          type: string
+          xml:
+            name: ApartmentNumberMaskCode
+        cityMaskCode:
+          type: string
+          xml:
+            name: CityMaskCode
+        stateMaskCode:
+          type: string
+          xml:
+            name: StateMaskCode
+        zipMaskCode:
+          type: string
+          xml:
+            name: ZipMaskCode
+        poboxMaskCode:
+          type: string
+    ScrubAddressReply:
+      required:
+        - finalistLongDescription
+        - finalistSeverity
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/Status'
+        address:
+          $ref: '#/components/schemas/AddressResponse'
+        impactedAddressFields:
+          $ref: '#/components/schemas/ImpactedAddressFields'
+        addressTypeCode:
+          type: string
+          xml:
+            name: AddressTypeCode
+        finalistSeverity:
+          type: string
+          xml:
+            name: FinalistSeverity
+        finalistLongDescription:
+          type: string
+          xml:
+            name: FinalistLongDescription
+        finalistScrubbedStreetAddress:
+          $ref: '#/components/schemas/FinalistScrubbedStreetAddress'
+    Status:
+      required:
+        - severity
+        - statusCode
+        - statusDescription
+      type: object
+      properties:
+        statusCode:
+          type: integer
+          xml:
+            name: StatusCode
+        severity:
+          type: string
+          xml:
+            name: Severity
+          enum:
+            - WARNING
+            - INFO
+            - ERROR
+        statusDescription:
+          type: string
+          xml:
+            name: StatusDescription
+        serverStatusCode:
+          type: string
+          xml:
+            name: ServerStatusCode
+        serverStatusDescription:
+          type: string
+          xml:
+            name: ServerStatusDescription
+        additionalStatus:
+          type: array
+          xml:
+            name: AdditionalStatus
+          items:
+            $ref: '#/components/schemas/AdditionalStatus'
+    AuthorizationResponse:
+      type: object
+      properties:
+        idToken:
+          type: string
+        accessToken:
+          type: string
+    CreditCardMailOfferRequest:
+      required:
+        - confirmationCode
+        - zipCode
+      type: object
+      properties:
+        confirmationCode:
+          type: string
+        zipCode:
+          type: string
+    GetMailFileApplicantAddress:
+      type: object
+      properties:
+        addressLine1:
+          type: string
+          xml:
+            name: AddressLine1
+        addressLine2:
+          type: string
+          xml:
+            name: AddressLine2
+        suiteNumber:
+          type: string
+          xml:
+            name: SuiteNumber
+        city:
+          type: string
+          xml:
+            name: City
+        state:
+          type: string
+          xml:
+            name: State
+        zipCode:
+          type: string
+          xml:
+            name: ZipCode
+      xml:
+        name: GetMailFileApplicantAddress
+    GetMailFileApplicantData:
+      type: object
+      properties:
+        getMailFileApplicantName:
+          $ref: '#/components/schemas/GetMailFileApplicantName'
+        getMailFileApplicantAddress:
+          $ref: '#/components/schemas/GetMailFileApplicantAddress'
+        getMailFileProductInformation:
+          $ref: '#/components/schemas/GetMailFileProductInformation'
+      xml:
+        name: GetMailFileApplicantData
+    GetMailFileApplicantName:
+      type: object
+      properties:
+        lastName:
+          type: string
+          xml:
+            name: LastName
+        firstName:
+          type: string
+          xml:
+            name: FirstName
+        middleInitial:
+          type: string
+          xml:
+            name: MiddleInitial
+        nameSuffix:
+          type: string
+          xml:
+            name: NameSuffix
+      xml:
+        name: GetMailFileApplicantName
+    GetMailFileProductInformation:
+      type: object
+      properties:
+        webProductType:
+          type: string
+          xml:
+            name: WebProductType
+        sourceCode:
+          type: integer
+          xml:
+            name: SourceCode
+        bankBrandIndicator:
+          type: string
+          xml:
+            name: BankBrandIndicator
+        riskTierCode:
+          type: string
+          xml:
+            name: RiskTierCode
+        offerID:
+          type: string
+          xml:
+            name: OfferID
+        offerType:
+          type: string
+          xml:
+            name: OfferType
+        icsproductNumber:
+          type: integer
+        acapsproductCode:
+          type: string
+        icslocationNumber:
+          type: integer
+      xml:
+        name: GetMailFileProductInformation
+        namespace: http://soa.usbank.com/CreditCardDirectApplyService_V_1_0
+    GetMailFileResponse:
+      required:
+        - requestIdentifier
+      type: object
+      properties:
+        requestIdentifier:
+          type: string
+          xml:
+            name: RequestIdentifier
+        messageStatus:
+          $ref: '#/components/schemas/Status'
+        confirmationCode:
+          type: string
+          xml:
+            name: ConfirmationCode
+        getMailFileApplicantData:
+          $ref: '#/components/schemas/GetMailFileApplicantData'
+        directMailType:
+          type: string
+          xml:
+            name: DirectMailType
+        offerExpirationDate:
+          type: string
+          format: date-time
+          xml:
+            name: OfferExpirationDate
+    Rate:
+      type: object
+      properties:
+        apr:
+          type: number
+          format: double
+        apy:
+          type: number
+          format: double
+        minimumBalance:
+          type: number
+          format: double
+        maximumBalance:
+          type: number
+          format: double
+        termInDays:
+          type: integer
+          format: int32
+        termInMonths:
+          type: integer
+          format: int32
+        termPeriod:
+          type: integer
+          format: int32
+        tierDescription:
+          type: string
+    RateGrid:
+      type: object
+      properties:
+        productKey:
+          type: string
+        productName:
+          type: string
+        rateGridType:
+          type: string
+        rates:
+          type: array
+          items:
+            $ref: '#/components/schemas/Rate'
+        totalTermInMonths:
+          type: integer
+          format: int32
+        blendedApy:
+          type: number
+          format: double
+    RestRateToolServiceResponse:
+      type: object
+      properties:
+        regionCode:
+          type: string
+        regionName:
+          type: string
+        effectiveDate:
+          type: string
+        rateGrids:
+          type: array
+          items:
+            $ref: '#/components/schemas/RateGrid'
+        branchId:
+          type: string
+    AccountKeyIdentifier:
+      required:
+        - primaryIdentifier
+        - productCode
+      type: object
+      properties:
+        operatingCompanyIdentifier:
+          type: integer
+          xml:
+            name: OperatingCompanyIdentifier
+        productCode:
+          type: string
+          xml:
+            name: ProductCode
+        primaryIdentifier:
+          type: string
+          xml:
+            name: PrimaryIdentifier
+    AccountPrimaryPartialIdentifier2:
+      required:
+        - primaryIdentifier
+      type: object
+      properties:
+        operatingCompanyIdentifier:
+          type: integer
+          xml:
+            name: OperatingCompanyIdentifier
+        productCode:
+          type: string
+          xml:
+            name: ProductCode
+        primaryIdentifier:
+          type: string
+          xml:
+            name: PrimaryIdentifier
+    GetAccountDetail:
+      type: object
+      properties:
+        accountKeyIdentifier:
+          $ref: '#/components/schemas/AccountKeyIdentifier'
+        returnFiveStarPackageCodeSwitch:
+          type: boolean
+          xml:
+            name: ReturnFiveStarPackageCodeSwitch
+        includeAddressSwitch:
+          type: boolean
+          xml:
+            name: IncludeAddressSwitch
+    GetAccountDetailRequest:
+      type: object
+      properties:
+        getBasicAccountDetail:
+          $ref: '#/components/schemas/GetBasicAccountDetail'
+        getAccountDetail:
+          $ref: '#/components/schemas/GetAccountDetail'
+      xml:
+        name: GetAccountDetailRequest
+    GetBasicAccountDetail:
+      type: object
+      properties:
+        accountKeyIdentifier:
+          $ref: '#/components/schemas/AccountPrimaryPartialIdentifier2'
+        includeAddressSwitch:
+          type: boolean
+          xml:
+            name: IncludeAddressSwitch
+    VerifyAccountResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        routingNumber:
+          type: string
+    CreditCardOfferInformationRequest:
+      required:
+        - icsLocationCode
+        - offerID
+        - sourceCode
+      type: object
+      properties:
+        offerID:
+          type: string
+        sourceCode:
+          type: string
+        icsLocationCode:
+          type: string
+        acapsProductCode:
+          type: string
+    CreditCardOfferDetailsInformationRequest:
+      required:
+        - locationNumber
+        - OfferID
+        - requestSourceCode
+      type: object
+      properties:
+        OfferID:
+          type: string
+        requestSourceCode:
+          type: string
+        locationNumber:
+          type: string
+    CommonProductDetailData:
+      type: object
+      properties:
+        productNumber:
+          type: integer
+          format: int32
+        employeeIndicator:
+          type: string
+        rewardInitialOfferAmount:
+          type: string
+        rewardEarningRate:
+          type: string
+        productCardType:
+          type: string
+        rewardRollupCode:
+          type: string
+        pacPhoneNumber:
+          type: string
+        enrollInitOfferAmount:
+          type: string
+        firstUseInitOfferAmount:
+          type: string
+        rewardsFlag:
+          type: string
+        callCenterPOBox:
+          type: string
+        callCenterCityStateZip:
+          type: string
+        tddPhoneNumber:
+          type: string
+        callCenterPhoneNumber:
+          type: string
+        gracePeriodMinDays:
+          type: integer
+          format: int32
+        gracePeriodMaxDays:
+          type: integer
+          format: int32
+        minimumFinanceCharge:
+          type: string
+        accountMgmtFee:
+          type: string
+        promoCodeData:
+          $ref: '#/components/schemas/PromoCodeData'
+        disclosureOfferFlag:
+          type: string
+        disclosureOfferAINumber:
+          type: string
+        dmCustEnterPhone:
+          type: string
+        dmBankEnterPhone:
+          type: string
+        custEnterPhone:
+          type: string
+        bankEnterPhone:
+          type: string
+        creditorName:
+          type: string
+    CreditCardOfferInformationResponse:
+      type: object
+      properties:
+        ratesAndFeesResponse:
+          $ref: '#/components/schemas/RatesAndFeesResponse'
+    LocationSpecificData:
+      type: object
+      properties:
+        locationName:
+          type: string
+        brandingLocationName:
+          type: string
+        clientType:
+          type: string
+        issuerBU:
+          type: integer
+          format: int32
+    ProductDetailData:
+      type: object
+      properties:
+        commonProductDetailData:
+          $ref: '#/components/schemas/CommonProductDetailData'
+        productVariableData:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductVariableData'
+        calculatedMinAPR:
+          type: string
+        calculatedMaxAPR:
+          type: string
+        offerType:
+          type: string
+    ProductVariableData:
+      type: object
+      properties:
+        productLevel:
+          type: string
+        productDescription:
+          type: string
+        productName:
+          type: string
+        portfolioBUIdCode:
+          type: string
+        productLineCode:
+          type: string
+        productType:
+          type: integer
+          format: int32
+        productTypeShortDescription:
+          type: string
+        interestRateTypeCode:
+          type: string
+        indexRate:
+          type: string
+        purchaseMargin:
+          type: string
+        purchaseMinRate:
+          type: string
+        purchaseMaxRate:
+          type: string
+        purchaseCeilingRate:
+          type: string
+        purchasePenaltyRateTypeCode:
+          type: string
+        purchasePenaltyRate:
+          type: string
+        purchasePenaltyMargin:
+          type: string
+        purchasePenaltyMinAPR:
+          type: string
+        purchasePenaltyCeilingRate:
+          type: string
+        cashAdvanceRateTypeCode:
+          type: string
+        introCashAdvanceMargin:
+          type: string
+        introCashAdvanceMinRate:
+          type: string
+        introCashAdvanceMaxRate:
+          type: string
+        introCashAdvancePenaltyRateTypeCode:
+          type: string
+        cashAdvanceMinAPR:
+          type: string
+        cashAdvanceCeilingRate:
+          type: string
+        introRateTypeCode:
+          type: string
+        introRateMonths:
+          type: integer
+          format: int32
+        btRateTypeCode:
+          type: string
+        btIndexRate:
+          type: string
+        btMargin:
+          type: string
+        btMinRate:
+          type: string
+        btMaxRate:
+          type: string
+        introBTRateTypeCode:
+          type: string
+        introBTIndexRate:
+          type: string
+        introBTMargin:
+          type: string
+        introBTRate:
+          type: string
+        introBTRateMonths:
+          type: integer
+          format: int32
+        introBTBaseFee:
+          type: string
+        introBTFeeRate:
+          type: string
+        btBaseFee:
+          type: string
+        btIndicatorFee:
+          type: string
+        btRateFee:
+          type: string
+        btMaxFee:
+          type: string
+        latePaymentFee1:
+          type: string
+        latePaymentFee2:
+          type: string
+        latePaymentFee3:
+          type: string
+        latePaymentFee4:
+          type: string
+        latePaymentFee5:
+          type: string
+        latePaymentNumber1:
+          type: integer
+          format: int32
+        latePaymentNumber2:
+          type: integer
+          format: int32
+        latePaymentNumber3:
+          type: integer
+          format: int32
+        latePaymentNumber4:
+          type: integer
+          format: int32
+        latePaymentNumber5:
+          type: integer
+          format: int32
+        thresholdFeeAmount1:
+          type: string
+        thresholdFeeAmount2:
+          type: string
+        thresholdFeeAmount3:
+          type: string
+        thresholdFeeAmount4:
+          type: string
+        thresholdFeeAmount5:
+          type: string
+        travelRewardsFee:
+          type: string
+        overLimitFee:
+          type: string
+        cashEquivalantBaseFee:
+          type: string
+        cashEquivalantFeeIndicator:
+          type: string
+        cashEquivalantFeeRate:
+          type: string
+        cashEquivalantMaxFee:
+          type: string
+        introBTFeeIndicator:
+          type: string
+        introBTFeeMax:
+          type: string
+        purchasePenaltyIntIndex:
+          type: string
+        cashAdvanceIndex:
+          type: string
+        introRateExpMtd:
+          type: string
+        introRateExpDte:
+          type: string
+        introBTRateExpMtd:
+          type: string
+        introBTRateExpDte:
+          type: string
+        introBTFeesExpMtd:
+          type: string
+        introBTFeesExpDte:
+          type: string
+        introRateMin:
+          type: string
+        introRateMax:
+          type: string
+        introRateMinMts:
+          type: integer
+          format: int32
+        introRateMaxMts:
+          type: integer
+          format: int32
+        introBTRTRdmFlag:
+          type: string
+        introBTRateMinMts:
+          type: integer
+          format: int32
+        introBTRateMaxMts:
+          type: integer
+          format: int32
+        introBTRTRdmDte:
+          type: string
+        introBTRTRdmDys:
+          type: integer
+          format: int32
+        introBTRateMin:
+          type: string
+        introBTRateMax:
+          type: string
+        introBTFeesRdmFlag:
+          type: string
+        introBTFeesRdmDte:
+          type: string
+        introBTFeesRdmDys:
+          type: integer
+          format: int32
+        purchaseMinAPR:
+          type: string
+        btMinAPR:
+          type: string
+        btMaxAPR:
+          type: string
+        intPurchansePenaltyFloorMaxAPR:
+          type: string
+        intCashAdvanceFloorMaxAPR:
+          type: string
+        purchaseFloorMaxAPR:
+          type: string
+        btFloorMaxAPR:
+          type: string
+        overLimitEligibleFlag:
+          type: string
+        foreignPurchaseUSDFee:
+          type: string
+        foreignPurchaseNonUSDFee:
+          type: string
+        foreignATMUSDFee:
+          type: string
+        foreignATMNonUSDFee:
+          type: string
+        cashTellBasefee:
+          type: string
+        cashTellIndFee:
+          type: string
+        cashTellRateFee:
+          type: string
+        cashTellMaxFee:
+          type: string
+        cashATM2BaseFee:
+          type: string
+        cashATM2IndFee:
+          type: string
+        cashATM2RateFee:
+          type: string
+        cashATM2MaxFee:
+          type: string
+        cashODBaseFee:
+          type: string
+        cashODIndFee:
+          type: string
+        cashODRateFee:
+          type: string
+        cashODMaxFee:
+          type: string
+        returnPaymentFee:
+          type: string
+        cashConvBaseFee:
+          type: string
+        cashConvIndFee:
+          type: string
+        cashConvRateFee:
+          type: string
+        cashConvMaxFee:
+          type: string
+        riskTierInformation:
+          type: array
+          items:
+            $ref: '#/components/schemas/RiskTierInformation'
+        introCashAdvancePenaltyRate:
+          type: number
+        introCashAdvancePenaltyMargin:
+          type: number
+        introCashAdvancePenaltyMinAPR:
+          type: number
+        introCashAdvancePenaltyCeilingRate:
+          type: number
+        introCARate:
+          type: number
+        introPurchaseRate:
+          type: number
+        introBTFeeMonths:
+          type: integer
+          format: int32
+        balanceTransferIndicator:
+          type: string
+        additionalCardFee:
+          type: string
+    PromoCodeData:
+      type: object
+      properties:
+        promoCodeCount:
+          type: integer
+          format: int32
+        promoCodeTable:
+          type: array
+          items:
+            $ref: '#/components/schemas/PromoCodeTable'
+    PromoCodeTable:
+      type: object
+      properties:
+        promoCode:
+          type: integer
+          format: int32
+        promoDescripition:
+          type: string
+        promoExpirationDate:
+          type: string
+    RatesAndFeesResponse:
+      type: object
+      properties:
+        isSuccess:
+          type: string
+        errorCode:
+          type: string
+        errorDescription:
+          type: string
+        locationSpecificData:
+          $ref: '#/components/schemas/LocationSpecificData'
+        productDetailData:
+          $ref: '#/components/schemas/ProductDetailData'
+    RiskTierInformation:
+      type: object
+      properties:
+        annualFeeAmount:
+          type: string
+        annualAEFeeAmount:
+          type: string
+        annualAOFeeAmount:
+          type: string
+        annualFeeBenchmarkCode:
+          type: string
+        annualFeeFreeMonths:
+          type: integer
+          format: int32
+        annualFeePurchaseAmount:
+          type: string
+    OADTermsAndConditionsRequest:
+      required:
+        - locationCode
+        - offerId
+        - sourceCode
+      type: object
+      properties:
+        offerId:
+          maxLength: 2147483647
+          minLength: 1
+          type: string
+        locationCode:
+          maxLength: 2147483647
+          minLength: 1
+          type: string
+        sourceCode:
+          maxLength: 2147483647
+          minLength: 1
+          type: string
+        prequalifiedMailOffer:
+          type: boolean
+        icsProductNumber:
+          type: string
+        acapsProductCode:
+          type: string
+        riskTier:
+          type: string
+    InstantAccessCardDetails:
+      type: object
+      properties:
+        instantAccessCardNumber:
+          type: string
+        instantAccessCardCVV:
+          type: string
+        instantAccessCardExpiration:
+          type: string
+        nameOnInstantAccessCard:
+          type: string
+    RoutingNumberValidationResponse:
+      type: object
+      properties:
+        routingNumberValid:
+          type: boolean
+        usbRoutingNumber:
+          type: boolean
+        bankName:
+          type: string
+    GetAllianceOffersRequest:
+      type: object
+      properties:
+        offerUsageCode:
+          type: string
+        offerProductType:
+          type: string
+        applicationId:
+          type: string
+    UpdateAllianceOffersRequest:
+      type: object
+      properties:
+        offerId:
+          type: string
+        offerStatus:
+          type: string
+  securitySchemes:
+    basicScheme:
+      type: http
+      scheme: basic
