@@ -51,7 +51,7 @@ public class OpenApiSpecCompareService {
                 .forEach(v -> {
                     PathDetails newPath = new PathDetails();
                     newPath.setPath(v);
-                    newPath.setChanges(Collections.singletonList("Added in target"));
+                    newPath.setMajorChanges(Collections.singletonList("Added in target"));
                     pathDetailsList.add(newPath);
                 });
 
@@ -61,7 +61,7 @@ public class OpenApiSpecCompareService {
                 .forEach(v -> {
                     PathDetails newPath = new PathDetails();
                     newPath.setPath(v);
-                    newPath.setChanges(Collections.singletonList("Removed from target"));
+                    newPath.setMajorChanges(Collections.singletonList("Removed from target"));
                     pathDetailsList.add(newPath);
                 });
 
@@ -207,7 +207,7 @@ public class OpenApiSpecCompareService {
                     responseContentChanges.put(k, new LinkedHashMap<>());
                     v.getContent().forEach((k1, v1) -> {
                         BreakingChange breakingChange = new BreakingChange();
-                        breakingChange.setChanges(Collections.singletonList("Response added to target"));
+                        breakingChange.setMajorChanges(Arrays.asList("Response added to target"));
                         responseContentChanges.get(k).put(k1, breakingChange);
                     });
                 });
@@ -217,7 +217,7 @@ public class OpenApiSpecCompareService {
                     responseContentChanges.put(k, new LinkedHashMap<>());
                     v.getContent().forEach((k1, v1) -> {
                         BreakingChange breakingChange = new BreakingChange();
-                        breakingChange.setChanges(Collections.singletonList("Response removed from target"));
+                        breakingChange.setMajorChanges(Arrays.asList("Response removed from target"));
                         responseContentChanges.get(k).put(k1, breakingChange);
                     });
                 });
@@ -225,7 +225,7 @@ public class OpenApiSpecCompareService {
         }
 
         PathItemDetails pathItemDetails = new PathItemDetails();
-        pathItemDetails.setChanges(changes);
+        pathItemDetails.setMajorChanges(changes);
         pathItemDetails.setRequestBodyChanges(requestBodyChanges);
         pathItemDetails.setResponseContentChanges(responseContentChanges.isEmpty() ? null : responseContentChanges);
         return pathItemDetails.hasChange() ? pathItemDetails : null;
@@ -241,7 +241,7 @@ public class OpenApiSpecCompareService {
                 .filter(v -> !srcContentNames.contains(v))
                 .forEach(v -> {
                     BreakingChange newContent = new BreakingChange();
-                    newContent.setChanges(Collections.singletonList("Added in target"));
+                    newContent.setMajorChanges(Arrays.asList("Added in target"));
                     requestBodyChanges.put(v, newContent);
                 });
 
@@ -250,7 +250,7 @@ public class OpenApiSpecCompareService {
                 .filter(v -> !tgtContentNames.contains(v))
                 .forEach(v -> {
                     BreakingChange removedContent = new BreakingChange();
-                    removedContent.setChanges(Collections.singletonList("Removed from target"));
+                    removedContent.setMajorChanges(Arrays.asList("Removed from target"));
                     requestBodyChanges.put(v, removedContent);
                 });
 
@@ -265,15 +265,13 @@ public class OpenApiSpecCompareService {
                 String schemaName = srcRequestBody.getContent().get(v).getSchema().get$ref().substring(srcRequestBody.getContent().get(v).getSchema().get$ref().lastIndexOf("/") + 1);
                 ObjectSchema srcSchema = (ObjectSchema) srcOpenApi.getComponents().getSchemas().get(schemaName);
                 ObjectSchema tgtSchema = (ObjectSchema) tgtOpenApi.getComponents().getSchemas().get(schemaName);
-                List<String> changes = breakingChangesForSchema(srcSchema, tgtSchema);
-                if (!changes.isEmpty()) {
-                    BreakingChange breakingChange = new BreakingChange();
-                    breakingChange.setChanges(changes);
+                BreakingChange breakingChange = breakingChangesForSchema(srcSchema, tgtSchema);
+                if (breakingChange.hasChanges()) {
                     requestBodyChanges.put(v, breakingChange);
                 }
             } else {
                 BreakingChange breakingChange = new BreakingChange();
-                breakingChange.setChanges(Collections.singletonList("Request body changed"));
+                breakingChange.setMajorChanges(Collections.singletonList("Request body changed"));
                 requestBodyChanges.put(v, breakingChange);
             }
 
@@ -293,7 +291,7 @@ public class OpenApiSpecCompareService {
                     responseBodyChanges.put(v, new LinkedHashMap<>());
                     tgtResponses.get(v).getContent().forEach((k, s) -> {
                         BreakingChange newContent = new BreakingChange();
-                        newContent.setChanges(Collections.singletonList("Added in target"));
+                        newContent.setMinorChanges(Collections.singletonList("Added in target"));
                         responseBodyChanges.get(v).put(k, newContent);
                     });
                 });
@@ -305,7 +303,7 @@ public class OpenApiSpecCompareService {
                     responseBodyChanges.put(v, new LinkedHashMap<>());
                     srcResponses.get(v).getContent().forEach((k, s) -> {
                         BreakingChange newContent = new BreakingChange();
-                        newContent.setChanges(Collections.singletonList("Removed from target"));
+                        newContent.setMinorChanges(Collections.singletonList("Removed from target"));
                         responseBodyChanges.get(v).put(k, newContent);
                     });
                 });
@@ -339,7 +337,7 @@ public class OpenApiSpecCompareService {
                 .filter(v -> !srcContentNames.contains(v))
                 .forEach(v -> {
                     BreakingChange newContent = new BreakingChange();
-                    newContent.setChanges(Collections.singletonList("Added in target"));
+                    newContent.setMajorChanges(Collections.singletonList("Added in target"));
                     responseBodyChanges.put(v, newContent);
                 });
 
@@ -348,7 +346,7 @@ public class OpenApiSpecCompareService {
                 .filter(v -> !tgtContentNames.contains(v))
                 .forEach(v -> {
                     BreakingChange removedContent = new BreakingChange();
-                    removedContent.setChanges(Collections.singletonList("Removed from target"));
+                    removedContent.setMajorChanges(Collections.singletonList("Removed from target"));
                     responseBodyChanges.put(v, removedContent);
                 });
 
@@ -364,15 +362,13 @@ public class OpenApiSpecCompareService {
                 String schemaName = srcContent.get(v).getSchema().get$ref().substring(srcContent.get(v).getSchema().get$ref().lastIndexOf("/") + 1);
                 ObjectSchema srcSchema = (ObjectSchema) srcOpenApi.getComponents().getSchemas().get(schemaName);
                 ObjectSchema tgtSchema = (ObjectSchema) tgtOpenApi.getComponents().getSchemas().get(schemaName);
-                List<String> changes = breakingChangesForSchema(srcSchema, tgtSchema);
-                if (!changes.isEmpty()) {
-                    BreakingChange breakingChange = new BreakingChange();
-                    breakingChange.setChanges(changes);
+                BreakingChange breakingChange = breakingChangesForSchema(srcSchema, tgtSchema);
+                if (breakingChange.hasChanges()) {
                     responseBodyChanges.put(v, breakingChange);
                 }
             } else if ((srcContent.get(v).getSchema() == null && tgtContent.get(v).getSchema() != null) || (srcContent.get(v).getSchema() != null && tgtContent.get(v).getSchema() == null)) {
                 BreakingChange breakingChange = new BreakingChange();
-                breakingChange.setChanges(Collections.singletonList("Response content changed"));
+                breakingChange.setMajorChanges(Collections.singletonList("Response content changed"));
                 responseBodyChanges.put(v, breakingChange);
             }
         });
@@ -396,7 +392,7 @@ public class OpenApiSpecCompareService {
                 .forEach(v -> {
                     SchemaDetails newSchema = new SchemaDetails();
                     newSchema.setSchema(v);
-                    newSchema.setChanges(Collections.singletonList("Added in target"));
+                    newSchema.setMajorChanges(Collections.singletonList("Added in target"));
                     schemaDetails.add(newSchema);
                 });
 
@@ -406,7 +402,7 @@ public class OpenApiSpecCompareService {
                 .forEach(v -> {
                     SchemaDetails removedSchema = new SchemaDetails();
                     removedSchema.setSchema(v);
-                    removedSchema.setChanges(Collections.singletonList("Removed from target"));
+                    removedSchema.setMajorChanges(Collections.singletonList("Removed from target"));
                     schemaDetails.add(removedSchema);
                 });
 
@@ -418,11 +414,12 @@ public class OpenApiSpecCompareService {
         commonSchemaNames.forEach(v -> {
             ObjectSchema srcSchema = (ObjectSchema) srcSchemas.get(v);
             ObjectSchema tgtSchema = (ObjectSchema) tgtSchemas.get(v);
-            List<String> schemaBreakingChanges = breakingChangesForSchema(srcSchema, tgtSchema);
-            if (!schemaBreakingChanges.isEmpty()) {
+            BreakingChange schemaBreakingChanges = breakingChangesForSchema(srcSchema, tgtSchema);
+            if (schemaBreakingChanges.hasChanges()) {
                 SchemaDetails schemaChanges = new SchemaDetails();
                 schemaChanges.setSchema(v);
-                schemaChanges.setChanges(schemaBreakingChanges);
+                schemaChanges.getMinorChanges().addAll(schemaBreakingChanges.getMinorChanges());
+                schemaChanges.getMajorChanges().addAll(schemaBreakingChanges.getMajorChanges());
                 schemaDetails.add(schemaChanges);
             }
         });
@@ -431,42 +428,52 @@ public class OpenApiSpecCompareService {
 
     }
 
-    public List<String> breakingChangesForSchema(ObjectSchema srcSchema, ObjectSchema tgtSchema) {
-        List<String> changes = new ArrayList<>();
+    public BreakingChange breakingChangesForSchema(ObjectSchema srcSchema, ObjectSchema tgtSchema) {
+        BreakingChange breakingChange = new BreakingChange();
 
         if (srcSchema == null && tgtSchema == null) {
-            return changes;
+            return breakingChange;
         } else if (srcSchema == null || srcSchema.getProperties() == null) {
-            changes.add("Schema is missing on source");
-            return changes;
+            breakingChange.getMajorChanges().add("Schema is missing on source");
+            return breakingChange;
         } else if (tgtSchema == null || tgtSchema.getProperties() == null) {
-            changes.add("Schema is missing on target");
-            return changes;
+            breakingChange.getMajorChanges().add("Schema is missing on target");
+            return breakingChange;
         }
 
         Set<String> srcProps = srcSchema.getProperties().keySet();
         Set<String> tgtProps = tgtSchema.getProperties().keySet();
+        Set<String> srcPropsUpper = srcSchema.getProperties().keySet().stream().map(String::toUpperCase).collect(Collectors.toSet());
+        Set<String> tgtPropsUpper = tgtSchema.getProperties().keySet().stream().map(String::toUpperCase).collect(Collectors.toSet());
 
         String newTgtProps = tgtProps
                 .stream()
-                .filter(v -> !srcProps.contains(v))
+                .filter(v -> !srcPropsUpper.contains(v.toUpperCase()))
                 .collect(Collectors.joining(", "));
         if (!newTgtProps.isEmpty()) {
-            changes.add("Properties added to Target: " + newTgtProps);
+            breakingChange.getMinorChanges().add("Properties added to Target: " + newTgtProps);
         }
 
         String newSrcProps = srcProps
                 .stream()
-                .filter(v -> !tgtProps.contains(v))
+                .filter(v -> !tgtPropsUpper.contains(v.toUpperCase()))
                 .collect(Collectors.joining(", "));
 
         if (!newSrcProps.isEmpty()) {
-            changes.add("Properties deleted from Target: " + newSrcProps);
+            breakingChange.getMinorChanges().add("Properties deleted from Target: " + newSrcProps);
         }
+
+        tgtProps
+                .forEach(t -> {
+                    srcProps.stream()
+                            .filter(s -> !s.equals(t) && s.equalsIgnoreCase(t))
+                            .findAny()
+                            .ifPresent(s -> breakingChange.getMajorChanges().add("Property " + s + " renamed in Target: " + t));
+                });
 
         String requiredChanges = compareRequiredProps(srcSchema.getRequired(), tgtSchema.getRequired(), "Properties");
         if (requiredChanges != null && !requiredChanges.isEmpty()) {
-            changes.add(requiredChanges);
+            breakingChange.getMajorChanges().add(requiredChanges);
         }
 
         Set<String> commonProps = srcProps.stream()
@@ -475,10 +482,10 @@ public class OpenApiSpecCompareService {
                 .collect(Collectors.toSet());
 
         commonProps.forEach(v -> {
-            changes.addAll(compareProperties(v, srcSchema.getProperties().get(v), tgtSchema.getProperties().get(v)));
+            breakingChange.getMajorChanges().addAll(compareProperties(v, srcSchema.getProperties().get(v), tgtSchema.getProperties().get(v)));
         });
 
-        return changes;
+        return breakingChange;
     }
 
     public List<String> compareProperties(String propName, Schema srcPropDetails, Schema tgtPropDetails) {

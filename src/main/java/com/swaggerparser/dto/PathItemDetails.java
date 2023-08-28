@@ -17,7 +17,7 @@ public class PathItemDetails extends BreakingChange {
 
     @JsonIgnore
     public boolean hasChange() {
-        return (getChanges() != null && !getChanges().isEmpty())
+        return super.hasChanges()
                 || (requestBodyChanges != null && !requestBodyChanges.isEmpty())
                 || (responseContentChanges != null && !responseContentChanges.isEmpty());
     }

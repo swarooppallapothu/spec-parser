@@ -1,5 +1,6 @@
 package com.swaggerparser.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,10 +11,17 @@ import java.util.List;
 @Getter
 public class BreakingChange {
 
-    private List<String> changes;
+    private List<String> majorChanges;
+    private List<String> minorChanges;
 
     public BreakingChange() {
-        this.changes = new ArrayList<>();
+        this.minorChanges = new ArrayList<>();
+        this.majorChanges = new ArrayList<>();
+    }
+
+    @JsonIgnore
+    public boolean hasChanges() {
+        return !this.minorChanges.isEmpty() || !this.majorChanges.isEmpty();
     }
 
 }
