@@ -40,21 +40,21 @@ public class OpenApiSpecCompareServiceTest {
     void checkRequiredRequestParam() {
         tgtParseResult.getOpenAPI().getPaths().get("/utilities/tenant-authorization").getGet().getParameters().get(0).setRequired(false);
         SpecComparisonResponse response = openApiSpecCompareService.analyzeBreakingChanges(srcParseResult, tgtParseResult);
-        assertEquals(response.getPaths().get(0).getGet().getChanges().size(), 1);
+        assertEquals(response.getPaths().get(0).getGet().getMajorChanges().size(), 1);
     }
 
     @Test
     void checkRequiredPathParam() {
         tgtParseResult.getOpenAPI().getPaths().get("/utilities/deposit/v1/{productType}/rates").getGet().getParameters().get(0).setRequired(false);
         SpecComparisonResponse response = openApiSpecCompareService.analyzeBreakingChanges(srcParseResult, tgtParseResult);
-        assertEquals(response.getPaths().get(0).getGet().getChanges().size(), 1);
+        assertEquals(response.getPaths().get(0).getGet().getMajorChanges().size(), 1);
     }
 
     @Test
     void checkRequiredHeaderParam() {
         tgtParseResult.getOpenAPI().getComponents().getParameters().get("Authorization").setRequired(false);
         SpecComparisonResponse response = openApiSpecCompareService.analyzeBreakingChanges(srcParseResult, tgtParseResult);
-        assertEquals(response.getPaths().get(0).getGet().getChanges().size(), 1);
+        assertEquals(response.getPaths().get(0).getGet().getMajorChanges().size(), 1);
     }
 
     @Test
@@ -76,28 +76,28 @@ public class OpenApiSpecCompareServiceTest {
         operation.setResponses(apiResponses);
         tgtParseResult.getOpenAPI().getPaths().get("/utilities/validateAddress").get(operation);
         SpecComparisonResponse response = openApiSpecCompareService.analyzeBreakingChanges(srcParseResult, tgtParseResult);
-        assertEquals(response.getPaths().get(0).getGet().getChanges().size(), 1);
+        assertEquals(response.getPaths().get(0).getGet().getMajorChanges().size(), 1);
     }
 
     @Test
     void checkPathChanges_deleteExistingPath() {
         tgtParseResult.getOpenAPI().getPaths().get("/utilities/validateAddress").post(null);
         SpecComparisonResponse response = openApiSpecCompareService.analyzeBreakingChanges(srcParseResult, tgtParseResult);
-        assertEquals(response.getPaths().get(0).getPost().getChanges().size(), 1);
+        assertEquals(response.getPaths().get(0).getPost().getMajorChanges().size(), 1);
     }
 
     @Test
     void checkEnumValueChanges() {
         tgtParseResult.getOpenAPI().getPaths().get("/utilities/tenant-authorization").getGet().getParameters().get(3).getSchema().getEnum().remove(2);
         SpecComparisonResponse response = openApiSpecCompareService.analyzeBreakingChanges(srcParseResult, tgtParseResult);
-        assertEquals(response.getPaths().get(0).getGet().getChanges().size(), 1);
+        assertEquals(response.getPaths().get(0).getGet().getMajorChanges().size(), 1);
     }
 
     @Test
     void checkRequestParamType() {
         tgtParseResult.getOpenAPI().getPaths().get("/relateduserdetails").getPost().getParameters().get(0).setSchema(new IntegerSchema());
         SpecComparisonResponse response = openApiSpecCompareService.analyzeBreakingChanges(srcParseResult, tgtParseResult);
-        assertEquals(response.getPaths().get(0).getPost().getChanges().size(), 1);
+        assertEquals(response.getPaths().get(0).getPost().getMajorChanges().size(), 1);
     }
 
     @Test
@@ -118,14 +118,14 @@ public class OpenApiSpecCompareServiceTest {
     void checkResponseBodyFieldType() {
         ((ObjectSchema) tgtParseResult.getOpenAPI().getComponents().getSchemas().get("VerifyAccountResponse")).getProperties().put("routingNumber", new IntegerSchema());
         SpecComparisonResponse response = openApiSpecCompareService.analyzeBreakingChanges(srcParseResult, tgtParseResult);
-        assertEquals(response.getPaths().get(0).getPost().getResponseContentChanges().get("200").get("*/*").getChanges().size(), 1);
+        assertEquals(response.getPaths().get(0).getPost().getResponseContentChanges().get("200").get("*/*").getMajorChanges().size(), 1);
     }
 
     @Test
     void checkRequestParamNameCase() {
         tgtParseResult.getOpenAPI().getPaths().get("/myvest/getGoalDetails").getPost().getParameters().get(0).setName("uid");
         SpecComparisonResponse response = openApiSpecCompareService.analyzeBreakingChanges(srcParseResult, tgtParseResult);
-        assertEquals(response.getPaths().get(0).getPost().getChanges().size(), 3);
+        assertEquals(response.getPaths().get(0).getPost().getMajorChanges().size(), 3);
     }
 
     @Test
