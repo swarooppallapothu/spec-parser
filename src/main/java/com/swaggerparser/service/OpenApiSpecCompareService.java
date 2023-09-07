@@ -1,6 +1,6 @@
 package com.swaggerparser.service;
 
-import com.swaggerparser.dto.*;
+import com.swaggerparser.dto.BreakingChange;
 import io.swagger.parser.OpenAPIParser;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
@@ -23,7 +23,7 @@ import static io.swagger.v3.oas.models.PathItem.HttpMethod;
 @Service
 public class OpenApiSpecCompareService {
 
-    public SpecComparisonResponse analyzeBreakingChanges(String srcPath, String tgtPath) {
+    public BreakingChange analyzeBreakingChanges(String srcPath, String tgtPath) {
 
         SwaggerParseResult srcParseResult = new OpenAPIParser().readLocation(srcPath, null, null);
         SwaggerParseResult tgtParseResult = new OpenAPIParser().readLocation(tgtPath, null, null);
@@ -31,16 +31,26 @@ public class OpenApiSpecCompareService {
         return analyzeBreakingChanges(srcParseResult, tgtParseResult);
     }
 
-    public SpecComparisonResponse analyzeBreakingChanges(SwaggerParseResult source, SwaggerParseResult target) {
-        SpecComparisonResponse specComparisonResponse = new SpecComparisonResponse();
-        specComparisonResponse.setPaths(breakingChangesForPath(source.getOpenAPI(), target.getOpenAPI()));
-        specComparisonResponse.setSchemas(breakingChangesForSchemas(source.getOpenAPI().getComponents().getSchemas(), target.getOpenAPI().getComponents().getSchemas()));
-        return specComparisonResponse;
+    public BreakingChange analyzeBreakingChanges(SwaggerParseResult source, SwaggerParseResult target) {
+        BreakingChange breakingChange = new BreakingChange();
+        BreakingChange pathChanges = breakingChangesForPath(source.getOpenAPI(), target.getOpenAPI());
+        if (pathChanges.hasChanges()) {
+            breakingChange.getMajorChanges().addAll(pathChanges.getMajorChanges());
+            breakingChange.getMinorChanges().addAll(pathChanges.getMinorChanges());
+        }
+
+        BreakingChange schemaChanges = breakingChangesForSchemas(source.getOpenAPI().getComponents().getSchemas(), target.getOpenAPI().getComponents().getSchemas());
+        if (schemaChanges.hasChanges()) {
+            breakingChange.getMajorChanges().addAll(schemaChanges.getMajorChanges());
+            breakingChange.getMinorChanges().addAll(schemaChanges.getMinorChanges());
+        }
+
+        return breakingChange;
     }
 
-    public List<PathDetails> breakingChangesForPath(OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
+    public BreakingChange breakingChangesForPath(OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
 
-        List<PathDetails> pathDetailsList = new ArrayList<>();
+        BreakingChange changes = new BreakingChange();
 
         Set<String> srcPathNames = srcOpenApi.getPaths().keySet();
         Set<String> tgtPathNames = tgtOpenApi.getPaths().keySet();
@@ -49,20 +59,14 @@ public class OpenApiSpecCompareService {
                 .stream()
                 .filter(v -> !srcPathNames.contains(v))
                 .forEach(v -> {
-                    PathDetails newPath = new PathDetails();
-                    newPath.setPath(v);
-                    newPath.setMajorChanges(Collections.singletonList("Added in target"));
-                    pathDetailsList.add(newPath);
+                    changes.getMajorChanges().add(v + ": Added in target");
                 });
 
         srcPathNames
                 .stream()
                 .filter(v -> !tgtPathNames.contains(v))
                 .forEach(v -> {
-                    PathDetails newPath = new PathDetails();
-                    newPath.setPath(v);
-                    newPath.setMajorChanges(Collections.singletonList("Removed from target"));
-                    pathDetailsList.add(newPath);
+                    changes.getMajorChanges().add(v + ": Removed from target");
                 });
 
         Set<String> commonPathNames = srcPathNames.stream()
@@ -71,45 +75,40 @@ public class OpenApiSpecCompareService {
                 .collect(Collectors.toSet());
 
         commonPathNames.forEach(v -> {
-            PathDetails pathDetails = breakingChangesForPath(v, srcOpenApi, tgtOpenApi);
-            if (pathDetails.hasChange()) {
-                pathDetails.setPath(v);
-                pathDetailsList.add(pathDetails);
+            BreakingChange pathChanges = breakingChangesForPath(v, srcOpenApi, tgtOpenApi);
+            if (pathChanges.hasChanges()) {
+                changes.getMajorChanges().addAll(pathChanges.getMajorChanges());
+                changes.getMinorChanges().addAll(pathChanges.getMinorChanges());
             }
         });
 
-        return pathDetailsList;
+        return changes;
     }
 
-    public PathDetails breakingChangesForPath(String path, OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
-        PathDetails pathDetails = new PathDetails();
+    public BreakingChange breakingChangesForPath(String path, OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
+        BreakingChange pathChanges = new BreakingChange();
 
         PathItem srcPathItem = srcOpenApi.getPaths().get(path);
         PathItem tgtPathItem = tgtOpenApi.getPaths().get(path);
 
-        pathDetails.setGet(breakingChangesForPath(HttpMethod.GET, srcPathItem.readOperationsMap().get(HttpMethod.GET), tgtPathItem.readOperationsMap().get(HttpMethod.GET), srcOpenApi, tgtOpenApi));
-        pathDetails.setPost(breakingChangesForPath(HttpMethod.POST, srcPathItem.readOperationsMap().get(HttpMethod.POST), tgtPathItem.readOperationsMap().get(HttpMethod.POST), srcOpenApi, tgtOpenApi));
-        pathDetails.setPut(breakingChangesForPath(HttpMethod.PUT, srcPathItem.readOperationsMap().get(HttpMethod.PUT), tgtPathItem.readOperationsMap().get(HttpMethod.PUT), srcOpenApi, tgtOpenApi));
-        pathDetails.setDelete(breakingChangesForPath(HttpMethod.DELETE, srcPathItem.readOperationsMap().get(HttpMethod.DELETE), tgtPathItem.readOperationsMap().get(HttpMethod.DELETE), srcOpenApi, tgtOpenApi));
-        pathDetails.setOptions(breakingChangesForPath(HttpMethod.OPTIONS, srcPathItem.readOperationsMap().get(HttpMethod.OPTIONS), tgtPathItem.readOperationsMap().get(HttpMethod.OPTIONS), srcOpenApi, tgtOpenApi));
-        pathDetails.setHead(breakingChangesForPath(HttpMethod.HEAD, srcPathItem.readOperationsMap().get(HttpMethod.HEAD), tgtPathItem.readOperationsMap().get(HttpMethod.HEAD), srcOpenApi, tgtOpenApi));
-        pathDetails.setPatch(breakingChangesForPath(HttpMethod.PATCH, srcPathItem.readOperationsMap().get(HttpMethod.PATCH), tgtPathItem.readOperationsMap().get(HttpMethod.PATCH), srcOpenApi, tgtOpenApi));
-        pathDetails.setTrace(breakingChangesForPath(HttpMethod.TRACE, srcPathItem.readOperationsMap().get(HttpMethod.TRACE), tgtPathItem.readOperationsMap().get(HttpMethod.TRACE), srcOpenApi, tgtOpenApi));
-
-        return pathDetails;
+        for (HttpMethod method : HttpMethod.values()) {
+            BreakingChange methodChanges = breakingChangesForPath(path, method, srcPathItem.readOperationsMap().get(method), tgtPathItem.readOperationsMap().get(method), srcOpenApi, tgtOpenApi);
+            pathChanges.getMajorChanges().addAll(methodChanges.getMajorChanges());
+            pathChanges.getMinorChanges().addAll(methodChanges.getMinorChanges());
+        }
+        return pathChanges;
     }
 
-    public PathItemDetails breakingChangesForPath(HttpMethod method, Operation srcOperation, Operation tgtOperation, OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
-        List<String> changes = new ArrayList<>();
-        Map<String, BreakingChange> requestBodyChanges = null;
-        Map<String, Map<String, BreakingChange>> responseContentChanges = new LinkedHashMap<>();
+    public BreakingChange breakingChangesForPath(String path, HttpMethod method, Operation srcOperation, Operation tgtOperation, OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
+
+        BreakingChange changes = new BreakingChange();
 
         if (srcOperation == null && tgtOperation == null) {
-            return null;
+            return changes;
         } else if (srcOperation == null) {
-            changes.add("Added " + method + " Operation");
+            changes.getMajorChanges().add(path + ": Added " + method + " Operation");
         } else if (tgtOperation == null) {
-            changes.add("Removed " + method + " Operation");
+            changes.getMajorChanges().add(path + ": Removed " + method + " Operation");
         } else {
             if (srcOperation.getParameters() == null) {
                 srcOperation.setParameters(new ArrayList<>());
@@ -149,14 +148,14 @@ public class OpenApiSpecCompareService {
                     .collect(Collectors.joining(", "));
 
             if (!newParameters.isEmpty()) {
-                changes.add("Parameters added to Target: " + newParameters);
+                changes.getMajorChanges().add(path + " -> " + method.name() + ": Parameters added to Target: " + newParameters);
             }
 
             String removedParameters = srcParameterNames.stream()
                     .filter(v -> !tgtParameterNames.contains(v))
                     .collect(Collectors.joining(", "));
             if (!removedParameters.isEmpty()) {
-                changes.add("Parameters removed from Target: " + removedParameters);
+                changes.getMajorChanges().add(path + " -> " + method.name() + ": Parameters removed from Target: " + removedParameters);
             }
 
             List<String> srcRequiredParameterNames = srcOperation.getParameters()
@@ -173,7 +172,7 @@ public class OpenApiSpecCompareService {
 
             String requiredChanges = compareRequiredProps(srcRequiredParameterNames, tgtRequiredParameterNames, "Parameters");
             if (requiredChanges != null && !requiredChanges.isEmpty()) {
-                changes.add(requiredChanges);
+                changes.getMajorChanges().add(path + " -> " + method.name() + ": " + requiredChanges);
             }
 
             List<String> commonParameters = srcParameterNames.stream()
@@ -184,55 +183,63 @@ public class OpenApiSpecCompareService {
                 Parameter srcParameter = getParameter(v, srcOperation.getParameters());
                 Parameter tgtParameter = getParameter(v, tgtOperation.getParameters());
                 List<String> paramChanges = compareProperties(v, srcParameter.getSchema(), tgtParameter.getSchema());
-                if (!paramChanges.isEmpty()) {
-                    changes.addAll(paramChanges);
+                for (String paramChange : paramChanges) {
+                    changes.getMajorChanges().add(path + " -> " + method.name() + ": " + paramChange);
                 }
                 if (!srcParameter.getIn().equals(tgtParameter.getIn())) {
-                    changes.add("Parameter is " + srcParameter.getIn() + " in source and " + tgtParameter.getIn() + " in target");
+                    changes.getMajorChanges().add(path + " -> " + method.name() + ": Parameter is " + srcParameter.getIn() + " in source and " + tgtParameter.getIn() + " in target");
                 }
             });
 
             if (srcOperation.getRequestBody() != null && tgtOperation.getRequestBody() != null) {
-                requestBodyChanges = compareRequestBodyChanges(srcOperation.getRequestBody(), tgtOperation.getRequestBody(), srcOpenApi, tgtOpenApi);
+                BreakingChange requestBodyChanges = compareRequestBodyChanges(srcOperation.getRequestBody(), tgtOperation.getRequestBody(), srcOpenApi, tgtOpenApi);
+                if (requestBodyChanges.hasChanges()) {
+                    for (String reqMajorChange : requestBodyChanges.getMajorChanges()) {
+                        changes.getMajorChanges().add(path + " -> " + method.name() + ": " + reqMajorChange);
+                    }
+                    for (String reqMinorChange : requestBodyChanges.getMinorChanges()) {
+                        changes.getMinorChanges().add(path + " -> " + method.name() + ": " + reqMinorChange);
+                    }
+                }
             } else if (srcOperation.getRequestBody() == null && tgtOperation.getRequestBody() != null) {
-                changes.add("Request body added on target");
+                changes.getMajorChanges().add(path + " -> " + method.name() + ": Request body added on target");
             } else if (srcOperation.getRequestBody() != null && tgtOperation.getRequestBody() == null) {
-                changes.add("Request body removed from target");
+                changes.getMajorChanges().add(path + " -> " + method.name() + ": Request body removed from target");
             }
 
             if (hasValidResponse(srcOperation.getResponses()) && hasValidResponse(tgtOperation.getResponses())) {
-                responseContentChanges.putAll(compareApiResponsesChanges(srcOperation.getResponses(), tgtOperation.getResponses(), srcOpenApi, tgtOpenApi));
+                BreakingChange breakingChange = compareApiResponsesChanges(srcOperation.getResponses(), tgtOperation.getResponses(), srcOpenApi, tgtOpenApi);
+                if (breakingChange.hasChanges()) {
+                    changes.getMinorChanges().addAll(breakingChange.getMinorChanges()
+                            .stream()
+                            .map(c -> path + " -> " + method.name() + " -> " + c)
+                            .collect(Collectors.toList()));
+                    changes.getMajorChanges().addAll(breakingChange.getMajorChanges()
+                            .stream()
+                            .map(c -> path + " -> " + method.name() + " -> " + c)
+                            .collect(Collectors.toList()));
+                }
             } else if (!hasValidResponse(srcOperation.getResponses()) && hasValidResponse(tgtOperation.getResponses())) {
                 tgtOperation.getResponses().forEach((k, v) -> {
-                    responseContentChanges.put(k, new LinkedHashMap<>());
                     v.getContent().forEach((k1, v1) -> {
-                        BreakingChange breakingChange = new BreakingChange();
-                        breakingChange.setMajorChanges(Arrays.asList("Response added to target"));
-                        responseContentChanges.get(k).put(k1, breakingChange);
+                        changes.getMajorChanges().add(path + " -> " + method.name() + " -> " + k + " -> " + k1 + ": Response added to target");
                     });
                 });
 
             } else if (hasValidResponse(srcOperation.getResponses()) && !hasValidResponse(tgtOperation.getResponses())) {
                 srcOperation.getResponses().forEach((k, v) -> {
-                    responseContentChanges.put(k, new LinkedHashMap<>());
                     v.getContent().forEach((k1, v1) -> {
-                        BreakingChange breakingChange = new BreakingChange();
-                        breakingChange.setMajorChanges(Arrays.asList("Response removed from target"));
-                        responseContentChanges.get(k).put(k1, breakingChange);
+                        changes.getMajorChanges().add(path + " -> " + method.name() + " -> " + k + " -> " + k1 + ": Response removed from target");
                     });
                 });
             }
         }
 
-        PathItemDetails pathItemDetails = new PathItemDetails();
-        pathItemDetails.setMajorChanges(changes);
-        pathItemDetails.setRequestBodyChanges(requestBodyChanges);
-        pathItemDetails.setResponseContentChanges(responseContentChanges.isEmpty() ? null : responseContentChanges);
-        return pathItemDetails.hasChange() ? pathItemDetails : null;
+        return changes;
     }
 
-    public Map<String, BreakingChange> compareRequestBodyChanges(RequestBody srcRequestBody, RequestBody tgtRequestBody, OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
-        Map<String, BreakingChange> requestBodyChanges = new LinkedHashMap<>();
+    public BreakingChange compareRequestBodyChanges(RequestBody srcRequestBody, RequestBody tgtRequestBody, OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
+        BreakingChange requestBodyChanges = new BreakingChange();
         Set<String> srcContentNames = srcRequestBody.getContent().keySet();
         Set<String> tgtContentNames = tgtRequestBody.getContent().keySet();
 
@@ -240,18 +247,14 @@ public class OpenApiSpecCompareService {
                 .stream()
                 .filter(v -> !srcContentNames.contains(v))
                 .forEach(v -> {
-                    BreakingChange newContent = new BreakingChange();
-                    newContent.setMajorChanges(Arrays.asList("Added in target"));
-                    requestBodyChanges.put(v, newContent);
+                    requestBodyChanges.getMajorChanges().add("Added in target");
                 });
 
         srcContentNames
                 .stream()
                 .filter(v -> !tgtContentNames.contains(v))
                 .forEach(v -> {
-                    BreakingChange removedContent = new BreakingChange();
-                    removedContent.setMajorChanges(Arrays.asList("Removed from target"));
-                    requestBodyChanges.put(v, removedContent);
+                    requestBodyChanges.getMajorChanges().add("Removed from target");
                 });
 
         Set<String> commonSchemaNames = srcContentNames.stream()
@@ -267,20 +270,20 @@ public class OpenApiSpecCompareService {
                 ObjectSchema tgtSchema = (ObjectSchema) tgtOpenApi.getComponents().getSchemas().get(schemaName);
                 BreakingChange breakingChange = breakingChangesForSchema(srcSchema, tgtSchema);
                 if (breakingChange.hasChanges()) {
-                    requestBodyChanges.put(v, breakingChange);
+                    requestBodyChanges.getMajorChanges().addAll(breakingChange.getMajorChanges());
+                    requestBodyChanges.getMinorChanges().addAll(breakingChange.getMinorChanges());
                 }
             } else {
                 BreakingChange breakingChange = new BreakingChange();
                 breakingChange.setMajorChanges(Collections.singletonList("Request body changed"));
-                requestBodyChanges.put(v, breakingChange);
             }
 
         });
         return requestBodyChanges;
     }
 
-    public Map<String, Map<String, BreakingChange>> compareApiResponsesChanges(ApiResponses srcResponses, ApiResponses tgtResponses, OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
-        Map<String, Map<String, BreakingChange>> responseBodyChanges = new LinkedHashMap<>();
+    public BreakingChange compareApiResponsesChanges(ApiResponses srcResponses, ApiResponses tgtResponses, OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
+        BreakingChange responseBodyChanges = new BreakingChange();
         Set<String> srcResponseNames = srcResponses.keySet();
         Set<String> tgtResponseNames = tgtResponses.keySet();
 
@@ -288,11 +291,8 @@ public class OpenApiSpecCompareService {
                 .stream()
                 .filter(v -> !srcResponseNames.contains(v))
                 .forEach(v -> {
-                    responseBodyChanges.put(v, new LinkedHashMap<>());
                     tgtResponses.get(v).getContent().forEach((k, s) -> {
-                        BreakingChange newContent = new BreakingChange();
-                        newContent.setMinorChanges(Collections.singletonList("Added in target"));
-                        responseBodyChanges.get(v).put(k, newContent);
+                        responseBodyChanges.getMajorChanges().add(v + " -> " + k + ": Added in target");
                     });
                 });
 
@@ -300,11 +300,8 @@ public class OpenApiSpecCompareService {
                 .stream()
                 .filter(v -> !tgtResponseNames.contains(v))
                 .forEach(v -> {
-                    responseBodyChanges.put(v, new LinkedHashMap<>());
                     srcResponses.get(v).getContent().forEach((k, s) -> {
-                        BreakingChange newContent = new BreakingChange();
-                        newContent.setMinorChanges(Collections.singletonList("Removed from target"));
-                        responseBodyChanges.get(v).put(k, newContent);
+                        responseBodyChanges.getMajorChanges().add(v + " -> " + k + ": Removed from target");
                     });
                 });
 
@@ -314,17 +311,23 @@ public class OpenApiSpecCompareService {
                 .collect(Collectors.toSet());
 
         commonSchemaNames.forEach(v -> {
-
-            Map<String, BreakingChange> changeMap = compareResponseContentChanges(srcResponses.get(v).getContent(), tgtResponses.get(v).getContent(), srcOpenApi, tgtOpenApi);
-            if (!changeMap.isEmpty()) {
-                responseBodyChanges.put(v, changeMap);
+            BreakingChange changeMap = compareResponseContentChanges(srcResponses.get(v).getContent(), tgtResponses.get(v).getContent(), srcOpenApi, tgtOpenApi);
+            if (changeMap.hasChanges()) {
+                responseBodyChanges.getMinorChanges().addAll(changeMap.getMinorChanges()
+                        .stream()
+                        .map(c -> v + " -> " + c)
+                        .collect(Collectors.toList()));
+                responseBodyChanges.getMajorChanges().addAll(changeMap.getMajorChanges()
+                        .stream()
+                        .map(c -> v + " -> " + c)
+                        .collect(Collectors.toList()));
             }
         });
         return responseBodyChanges;
     }
 
-    public Map<String, BreakingChange> compareResponseContentChanges(Content srcContentIn, Content tgtContentIn, OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
-        Map<String, BreakingChange> responseBodyChanges = new LinkedHashMap<>();
+    public BreakingChange compareResponseContentChanges(Content srcContentIn, Content tgtContentIn, OpenAPI srcOpenApi, OpenAPI tgtOpenApi) {
+        BreakingChange responseBodyChanges = new BreakingChange();
 
         Content srcContent = srcContentIn == null ? new Content() : srcContentIn;
         Content tgtContent = tgtContentIn == null ? new Content() : tgtContentIn;
@@ -336,18 +339,14 @@ public class OpenApiSpecCompareService {
                 .stream()
                 .filter(v -> !srcContentNames.contains(v))
                 .forEach(v -> {
-                    BreakingChange newContent = new BreakingChange();
-                    newContent.setMajorChanges(Collections.singletonList("Added in target"));
-                    responseBodyChanges.put(v, newContent);
+                    responseBodyChanges.getMajorChanges().add(v + ": Added in target");
                 });
 
         srcContentNames
                 .stream()
                 .filter(v -> !tgtContentNames.contains(v))
                 .forEach(v -> {
-                    BreakingChange removedContent = new BreakingChange();
-                    removedContent.setMajorChanges(Collections.singletonList("Removed from target"));
-                    responseBodyChanges.put(v, removedContent);
+                    responseBodyChanges.getMajorChanges().add(v + ": Removed from target");
                 });
 
         Set<String> commonContentNames = srcContentNames.stream()
@@ -364,12 +363,17 @@ public class OpenApiSpecCompareService {
                 ObjectSchema tgtSchema = (ObjectSchema) tgtOpenApi.getComponents().getSchemas().get(schemaName);
                 BreakingChange breakingChange = breakingChangesForSchema(srcSchema, tgtSchema);
                 if (breakingChange.hasChanges()) {
-                    responseBodyChanges.put(v, breakingChange);
+                    responseBodyChanges.getMinorChanges().addAll(breakingChange.getMinorChanges()
+                            .stream()
+                            .map(c -> v + ": " + c)
+                            .collect(Collectors.toList()));
+                    responseBodyChanges.getMajorChanges().addAll(breakingChange.getMajorChanges()
+                            .stream()
+                            .map(c -> v + ": " + c)
+                            .collect(Collectors.toList()));
                 }
             } else if ((srcContent.get(v).getSchema() == null && tgtContent.get(v).getSchema() != null) || (srcContent.get(v).getSchema() != null && tgtContent.get(v).getSchema() == null)) {
-                BreakingChange breakingChange = new BreakingChange();
-                breakingChange.setMajorChanges(Collections.singletonList("Response content changed"));
-                responseBodyChanges.put(v, breakingChange);
+                responseBodyChanges.getMajorChanges().add(v + ": Response content changed");
             }
         });
         return responseBodyChanges;
@@ -380,8 +384,8 @@ public class OpenApiSpecCompareService {
     }
 
 
-    public List<SchemaDetails> breakingChangesForSchemas(Map<String, Schema> srcSchemas, Map<String, Schema> tgtSchemas) {
-        List<SchemaDetails> schemaDetails = new ArrayList<>();
+    public BreakingChange breakingChangesForSchemas(Map<String, Schema> srcSchemas, Map<String, Schema> tgtSchemas) {
+        BreakingChange schemaChanges = new BreakingChange();
 
         Set<String> srcSchemaNames = srcSchemas.keySet();
         Set<String> tgtSchemaNames = tgtSchemas.keySet();
@@ -390,20 +394,14 @@ public class OpenApiSpecCompareService {
                 .stream()
                 .filter(v -> !srcSchemaNames.contains(v))
                 .forEach(v -> {
-                    SchemaDetails newSchema = new SchemaDetails();
-                    newSchema.setSchema(v);
-                    newSchema.setMajorChanges(Collections.singletonList("Added in target"));
-                    schemaDetails.add(newSchema);
+                    schemaChanges.getMajorChanges().add(v + ": Added in target");
                 });
 
         srcSchemaNames
                 .stream()
                 .filter(v -> !tgtSchemaNames.contains(v))
                 .forEach(v -> {
-                    SchemaDetails removedSchema = new SchemaDetails();
-                    removedSchema.setSchema(v);
-                    removedSchema.setMajorChanges(Collections.singletonList("Removed from target"));
-                    schemaDetails.add(removedSchema);
+                    schemaChanges.getMajorChanges().add(v + ": Removed from target");
                 });
 
         Set<String> commonSchemaNames = srcSchemaNames.stream()
@@ -416,15 +414,19 @@ public class OpenApiSpecCompareService {
             ObjectSchema tgtSchema = (ObjectSchema) tgtSchemas.get(v);
             BreakingChange schemaBreakingChanges = breakingChangesForSchema(srcSchema, tgtSchema);
             if (schemaBreakingChanges.hasChanges()) {
-                SchemaDetails schemaChanges = new SchemaDetails();
-                schemaChanges.setSchema(v);
-                schemaChanges.getMinorChanges().addAll(schemaBreakingChanges.getMinorChanges());
-                schemaChanges.getMajorChanges().addAll(schemaBreakingChanges.getMajorChanges());
-                schemaDetails.add(schemaChanges);
+                schemaChanges.getMinorChanges().addAll(schemaBreakingChanges.getMinorChanges()
+                        .stream()
+                        .map(c -> v + ": " + c)
+                        .collect(Collectors.toList()));
+                schemaChanges.getMajorChanges().addAll(schemaBreakingChanges.getMajorChanges()
+                        .stream()
+                        .map(c -> v + ": " + c)
+                        .collect(Collectors.toList()));
+
             }
         });
 
-        return schemaDetails;
+        return schemaChanges;
 
     }
 

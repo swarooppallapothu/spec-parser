@@ -1,7 +1,7 @@
 package com.swaggerparser.controller;
 
+import com.swaggerparser.dto.BreakingChange;
 import com.swaggerparser.dto.SpecCompareRequest;
-import com.swaggerparser.dto.SpecComparisonResponse;
 import com.swaggerparser.service.OpenApiSpecCompareService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +18,7 @@ public class OpenApiSpecCompareApi {
     private OpenApiSpecCompareService openApiSpecCompareService;
 
     @PostMapping("/compare")
-    public ResponseEntity<SpecComparisonResponse> compare(@RequestBody SpecCompareRequest request) {
+    public ResponseEntity<BreakingChange> compare(@RequestBody SpecCompareRequest request) {
         return ResponseEntity.ok(openApiSpecCompareService.analyzeBreakingChanges(request.getSourcePath(), request.getTargetPath()));
 
     }
