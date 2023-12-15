@@ -6,7 +6,6 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.media.Content;
-import io.swagger.v3.oas.models.media.ObjectSchema;
 import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.parameters.Parameter;
@@ -25,6 +24,10 @@ public class OpenApiSpecCompareService {
 
     public BreakingChange analyzeBreakingChanges(String srcPath, String tgtPath) {
 
+//        ParseOptions options = new ParseOptions();
+//        options.setResolve(true);
+//        options.setResolveFully(true);
+//        options.setResolveCombinators(true);
         SwaggerParseResult srcParseResult = new OpenAPIParser().readLocation(srcPath, null, null);
         SwaggerParseResult tgtParseResult = new OpenAPIParser().readLocation(tgtPath, null, null);
 
@@ -135,11 +138,13 @@ public class OpenApiSpecCompareService {
 
             List<String> srcParameterNames = srcOperation.getParameters()
                     .stream()
+                    .filter(Objects::nonNull)
                     .map(Parameter::getName)
                     .collect(Collectors.toList());
 
             List<String> tgtParameterNames = tgtOperation.getParameters()
                     .stream()
+                    .filter(Objects::nonNull)
                     .map(Parameter::getName)
                     .collect(Collectors.toList());
 
@@ -160,13 +165,13 @@ public class OpenApiSpecCompareService {
 
             List<String> srcRequiredParameterNames = srcOperation.getParameters()
                     .stream()
-                    .filter(p -> p.getRequired() != null && p.getRequired())
+                    .filter(p -> p != null && p.getRequired() != null && p.getRequired())
                     .map(Parameter::getName)
                     .collect(Collectors.toList());
 
             List<String> tgtRequiredParameterNames = tgtOperation.getParameters()
                     .stream()
-                    .filter(p -> p.getRequired() != null && p.getRequired())
+                    .filter(p -> p != null && p.getRequired() != null && p.getRequired())
                     .map(Parameter::getName)
                     .collect(Collectors.toList());
 
@@ -266,8 +271,8 @@ public class OpenApiSpecCompareService {
             if (srcRequestBody.getContent().get(v).getSchema().get$ref() != null &&
                     srcRequestBody.getContent().get(v).getSchema().get$ref().equals(tgtRequestBody.getContent().get(v).getSchema().get$ref())) {
                 String schemaName = srcRequestBody.getContent().get(v).getSchema().get$ref().substring(srcRequestBody.getContent().get(v).getSchema().get$ref().lastIndexOf("/") + 1);
-                ObjectSchema srcSchema = (ObjectSchema) srcOpenApi.getComponents().getSchemas().get(schemaName);
-                ObjectSchema tgtSchema = (ObjectSchema) tgtOpenApi.getComponents().getSchemas().get(schemaName);
+                Schema srcSchema = srcOpenApi.getComponents().getSchemas().get(schemaName);
+                Schema tgtSchema = tgtOpenApi.getComponents().getSchemas().get(schemaName);
                 BreakingChange breakingChange = breakingChangesForSchema(srcSchema, tgtSchema);
                 if (breakingChange.hasChanges()) {
                     requestBodyChanges.getMajorChanges().addAll(breakingChange.getMajorChanges());
@@ -291,18 +296,22 @@ public class OpenApiSpecCompareService {
                 .stream()
                 .filter(v -> !srcResponseNames.contains(v))
                 .forEach(v -> {
-                    tgtResponses.get(v).getContent().forEach((k, s) -> {
-                        responseBodyChanges.getMajorChanges().add(v + " -> " + k + ": Added in target");
-                    });
+                    if (tgtResponses.get(v) != null && tgtResponses.get(v).getContent() != null) {
+                        tgtResponses.get(v).getContent().forEach((k, s) -> {
+                            responseBodyChanges.getMajorChanges().add(v + " -> " + k + ": Added in target");
+                        });
+                    }
                 });
 
         srcResponseNames
                 .stream()
                 .filter(v -> !tgtResponseNames.contains(v))
                 .forEach(v -> {
-                    srcResponses.get(v).getContent().forEach((k, s) -> {
-                        responseBodyChanges.getMajorChanges().add(v + " -> " + k + ": Removed from target");
-                    });
+                    if (srcResponses.get(v) != null && srcResponses.get(v).getContent() != null) {
+                        srcResponses.get(v).getContent().forEach((k, s) -> {
+                            responseBodyChanges.getMajorChanges().add(v + " -> " + k + ": Removed from target");
+                        });
+                    }
                 });
 
         Set<String> commonSchemaNames = srcResponseNames.stream()
@@ -359,8 +368,8 @@ public class OpenApiSpecCompareService {
                     && srcContent.get(v).getSchema().get$ref() != null &&
                     srcContent.get(v).getSchema().get$ref().equals(tgtContent.get(v).getSchema().get$ref())) {
                 String schemaName = srcContent.get(v).getSchema().get$ref().substring(srcContent.get(v).getSchema().get$ref().lastIndexOf("/") + 1);
-                ObjectSchema srcSchema = (ObjectSchema) srcOpenApi.getComponents().getSchemas().get(schemaName);
-                ObjectSchema tgtSchema = (ObjectSchema) tgtOpenApi.getComponents().getSchemas().get(schemaName);
+                Schema srcSchema = srcOpenApi.getComponents().getSchemas().get(schemaName);
+                Schema tgtSchema = tgtOpenApi.getComponents().getSchemas().get(schemaName);
                 BreakingChange breakingChange = breakingChangesForSchema(srcSchema, tgtSchema);
                 if (breakingChange.hasChanges()) {
                     responseBodyChanges.getMinorChanges().addAll(breakingChange.getMinorChanges()
@@ -410,8 +419,8 @@ public class OpenApiSpecCompareService {
                 .collect(Collectors.toSet());
 
         commonSchemaNames.forEach(v -> {
-            ObjectSchema srcSchema = (ObjectSchema) srcSchemas.get(v);
-            ObjectSchema tgtSchema = (ObjectSchema) tgtSchemas.get(v);
+            Schema srcSchema = srcSchemas.get(v);
+            Schema tgtSchema = tgtSchemas.get(v);
             BreakingChange schemaBreakingChanges = breakingChangesForSchema(srcSchema, tgtSchema);
             if (schemaBreakingChanges.hasChanges()) {
                 schemaChanges.getMinorChanges().addAll(schemaBreakingChanges.getMinorChanges()
@@ -430,7 +439,7 @@ public class OpenApiSpecCompareService {
 
     }
 
-    public BreakingChange breakingChangesForSchema(ObjectSchema srcSchema, ObjectSchema tgtSchema) {
+    public BreakingChange breakingChangesForSchema(Schema<Object> srcSchema, Schema<Object> tgtSchema) {
         BreakingChange breakingChange = new BreakingChange();
 
         if (srcSchema == null && tgtSchema == null) {
