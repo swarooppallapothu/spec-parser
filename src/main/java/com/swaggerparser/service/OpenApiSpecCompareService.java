@@ -389,7 +389,7 @@ public class OpenApiSpecCompareService {
     }
 
     public Parameter getParameter(String parameterName, List<Parameter> parameters) {
-        return parameters.stream().filter(p -> p.getName().equals(parameterName)).findAny().orElse(null);
+        return parameters.stream().filter(p -> p != null && p.getName().equals(parameterName)).findAny().orElse(null);
     }
 
 
